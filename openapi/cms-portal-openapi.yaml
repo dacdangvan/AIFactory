@@ -1,0 +1,825 @@
+
+openapi: 3.1.0
+info:
+  title: VIB CMS Portal API
+  version: 1.0.0
+  description: >
+    API contract for VIB Headless CMS Portal.
+    Supports snapshot versioning, release publishing,
+    hybrid content field values and shared localization.
+
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development - Mac
+
+  - url: http://127.0.0.1:8080/api/v1
+    description: Local Development - Loopback
+
+  - url: https://cms-api-uat.vib.com.vn/api/v1
+    description: UAT Environment
+
+  - url: https://cms-api.vib.com.vn/api/v1
+    description: Production Environment
+
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Products
+  - name: Pages
+  - name: Layouts
+  - name: Templates
+  - name: Contents
+  - name: Components
+  - name: Assets
+  - name: Workflows
+  - name: Publishing
+  - name: Authorization
+  - name: Delivery
+  - name: Preview
+  - name: Audit
+
+paths:
+  /products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /pages:
+    get:
+      tags: [Pages]
+      operationId: listPages
+      parameters:
+        - in: query
+          name: productId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: themeId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: keyword
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: Page list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResult"
+
+    post:
+      tags: [Pages]
+      operationId: createPage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageCreateRequest"
+      responses:
+        "201":
+          description: Page created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+
+  /pages/{pageId}:
+    parameters:
+      - $ref: "#/components/parameters/PageId"
+    get:
+      tags: [Pages]
+      operationId: getPage
+      responses:
+        "200":
+          description: Page detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    patch:
+      tags: [Pages]
+      operationId: updatePageMetadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageUpdateRequest"
+      responses:
+        "200":
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+
+  /pages/{pageId}/versions:
+    parameters:
+      - $ref: "#/components/parameters/PageId"
+    get:
+      tags: [Pages]
+      operationId: listPageVersions
+      responses:
+        "200":
+          description: Immutable page snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PageVersion"
+
+    post:
+      tags: [Pages]
+      operationId: createPageSnapshot
+      description: Creates a new full immutable snapshot.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageSnapshotRequest"
+      responses:
+        "201":
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageVersion"
+
+  /templates:
+    get:
+      tags: [Templates]
+      operationId: listTemplates
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Template"
+
+  /templates/{templateId}/versions:
+    parameters:
+      - in: path
+        name: templateId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Templates]
+      operationId: listTemplateVersions
+      responses:
+        "200":
+          description: Template snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateVersion"
+
+  /contents:
+    get:
+      tags: [Contents]
+      operationId: listContents
+      parameters:
+        - in: query
+          name: productId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: templateId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: keyword
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        "200":
+          description: Content list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResult"
+
+    post:
+      tags: [Contents]
+      operationId: createContent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContentCreateRequest"
+      responses:
+        "201":
+          description: Content created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Content"
+
+  /contents/{contentId}/versions:
+    parameters:
+      - in: path
+        name: contentId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Contents]
+      operationId: listContentVersions
+      responses:
+        "200":
+          description: Content snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContentVersion"
+    post:
+      tags: [Contents]
+      operationId: createContentSnapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContentSnapshotRequest"
+      responses:
+        "201":
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentVersion"
+
+  /components:
+    get:
+      tags: [Components]
+      operationId: listComponents
+      responses:
+        "200":
+          description: Component registry
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Component"
+
+  /assets/upload-url:
+    post:
+      tags: [Assets]
+      operationId: createAssetUploadUrl
+      description: Creates a short-lived presigned upload URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetUploadRequest"
+      responses:
+        "200":
+          description: Upload instructions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetUploadResponse"
+
+  /assets/{assetId}/complete-upload:
+    post:
+      tags: [Assets]
+      operationId: completeAssetUpload
+      parameters:
+        - in: path
+          name: assetId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Asset upload finalized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+
+  /workflows/{workflowId}/actions:
+    post:
+      tags: [Workflows]
+      operationId: executeWorkflowAction
+      parameters:
+        - in: path
+          name: workflowId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActionRequest"
+      responses:
+        "200":
+          description: Workflow action executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowInstance"
+
+  /authorization/me:
+    get:
+      tags: [Authorization]
+      operationId: getMyPermissions
+      responses:
+        "200":
+          description: Current user's product-scoped permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationContext"
+
+  /publishing/validate:
+    post:
+      tags: [Publishing]
+      operationId: validateRelease
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseCreateRequest"
+      responses:
+        "200":
+          description: Release validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReleaseValidation"
+
+  /publishing/releases:
+    post:
+      tags: [Publishing]
+      operationId: createRelease
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseCreateRequest"
+      responses:
+        "201":
+          description: Immutable release manifest created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Release"
+
+    get:
+      tags: [Publishing]
+      operationId: listReleases
+      responses:
+        "200":
+          description: Release history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Release"
+
+  /publishing/releases/{releaseId}/publish:
+    post:
+      tags: [Publishing]
+      operationId: publishRelease
+      parameters:
+        - in: path
+          name: releaseId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Release published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Release"
+
+  /delivery/v1/pages/resolve:
+    get:
+      tags: [Delivery]
+      security: []
+      operationId: resolvePublishedPage
+      parameters:
+        - in: query
+          name: path
+          required: true
+          schema: { type: string }
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            example: vi-VN
+        - in: query
+          name: productCode
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Published page resolved from release manifest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPage"
+        "404":
+          description: Published page not found
+
+  /preview/pages/{pageId}:
+    get:
+      tags: [Preview]
+      operationId: previewPage
+      parameters:
+        - in: path
+          name: pageId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: locale
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Authenticated preview of working version
+          headers:
+            Cache-Control:
+              schema: { type: string, example: no-store }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPage"
+
+  /audit-logs:
+    get:
+      tags: [Audit]
+      operationId: searchAuditLogs
+      parameters:
+        - in: query
+          name: resourceType
+          schema: { type: string }
+        - in: query
+          name: resourceId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Audit log results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResult"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageId:
+      in: path
+      name: pageId
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    Product:
+      type: object
+      required: [id, code, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        status: { type: string }
+
+    Page:
+      type: object
+      required: [id, productId, themeId, path, status]
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        themeId: { type: string, format: uuid }
+        path: { type: string }
+        status: { type: string }
+        workingVersionId: { type: string, format: uuid }
+        publishedVersionId:
+          type: [string, "null"]
+          format: uuid
+
+    PageCreateRequest:
+      type: object
+      required: [productId, themeId, path]
+      properties:
+        productId: { type: string, format: uuid }
+        themeId: { type: string, format: uuid }
+        path: { type: string }
+        defaultLocale: { type: string, example: vi-VN }
+
+    PageUpdateRequest:
+      type: object
+      properties:
+        path: { type: string }
+        title: { type: string }
+        seo:
+          type: object
+          additionalProperties: true
+
+    PageSnapshotRequest:
+      type: object
+      required: [snapshot, changeSummary]
+      properties:
+        snapshot:
+          $ref: "#/components/schemas/PageSnapshot"
+        changeSummary: { type: string }
+
+    PageSnapshot:
+      type: object
+      required: [locales, sections]
+      properties:
+        locales:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/PageSectionSnapshot"
+
+    PageSectionSnapshot:
+      type: object
+      required: [componentVersionId, position]
+      properties:
+        componentVersionId: { type: string, format: uuid }
+        contentVersionId:
+          type: [string, "null"]
+          format: uuid
+        settings:
+          type: object
+          additionalProperties: true
+        position: { type: integer }
+
+    PageVersion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        pageId: { type: string, format: uuid }
+        versionNumber: { type: integer }
+        snapshot:
+          $ref: "#/components/schemas/PageSnapshot"
+        createdAt: { type: string, format: date-time }
+
+    Template:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+
+    TemplateVersion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        versionNumber: { type: integer }
+        schema:
+          type: object
+          additionalProperties: true
+
+    Content:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        templateId: { type: string, format: uuid }
+        status: { type: string }
+        workingVersionId: { type: string, format: uuid }
+        publishedVersionId:
+          type: [string, "null"]
+          format: uuid
+
+    ContentCreateRequest:
+      type: object
+      required: [productId, templateId, data]
+      properties:
+        productId: { type: string, format: uuid }
+        templateId: { type: string, format: uuid }
+        data:
+          type: object
+          description: Locale-keyed shared content snapshot.
+          additionalProperties:
+            type: object
+            additionalProperties: true
+
+    ContentSnapshotRequest:
+      type: object
+      required: [dataSnapshot]
+      properties:
+        dataSnapshot:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        changeSummary: { type: string }
+
+    ContentVersion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        contentId: { type: string, format: uuid }
+        versionNumber: { type: integer }
+        dataSnapshot:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+
+    Component:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        runtimeType:
+          type: string
+          enum: [nextjs, html, file]
+        runtimeIdentifier: { type: string }
+        runtimeVersion: { type: string }
+        settingsSchema:
+          type: object
+          additionalProperties: true
+
+    AssetUploadRequest:
+      type: object
+      required: [fileName, contentType, sizeBytes]
+      properties:
+        fileName: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer, minimum: 1 }
+
+    AssetUploadResponse:
+      type: object
+      properties:
+        assetId: { type: string, format: uuid }
+        uploadUrl: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+
+    Asset:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+
+    WorkflowActionRequest:
+      type: object
+      required: [actionCode, resourceType, resourceId]
+      properties:
+        actionCode: { type: string }
+        resourceType: { type: string }
+        resourceId: { type: string, format: uuid }
+        comment: { type: string }
+
+    WorkflowInstance:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        currentState: { type: string }
+        resourceId: { type: string, format: uuid }
+
+    AuthorizationContext:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string, format: uuid }
+              permissions:
+                type: array
+                items: { type: string }
+
+    ReleaseCreateRequest:
+      type: object
+      required: [productId, items]
+      properties:
+        productId: { type: string, format: uuid }
+        environment: { type: string, enum: [uat, production] }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReleaseItemRequest"
+
+    ReleaseItemRequest:
+      type: object
+      required: [resourceType, resourceId, versionId]
+      properties:
+        resourceType:
+          type: string
+          enum: [page, content, component, layout, template, theme]
+        resourceId: { type: string, format: uuid }
+        versionId: { type: string, format: uuid }
+
+    ReleaseValidation:
+      type: object
+      properties:
+        valid: { type: boolean }
+        errors:
+          type: array
+          items: { type: string }
+        warnings:
+          type: array
+          items: { type: string }
+
+    Release:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        releaseNumber: { type: string }
+        status: { type: string }
+        manifest:
+          type: object
+          additionalProperties: true
+        publishedAt:
+          type: [string, "null"]
+          format: date-time
+
+    DeliveryPage:
+      type: object
+      properties:
+        path: { type: string }
+        locale: { type: string }
+        releaseId: { type: string, format: uuid }
+        page:
+          type: object
+          additionalProperties: true
+        sections:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    PageResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+
+    Error:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        traceId: { type: string }
+        details:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

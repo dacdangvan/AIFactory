@@ -1,0 +1,33 @@
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: vib-cms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vib_cms
+      POSTGRES_USER: cms_local
+      POSTGRES_PASSWORD: local_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - vib_cms_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cms_local -d vib_cms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: vib-cms-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - vib_cms_redisdata:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  vib_cms_pgdata:
+  vib_cms_redisdata:
