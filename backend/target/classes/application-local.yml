@@ -2,24 +2,23 @@ server:
   port: 8080
 
 spring:
-  application:
-    name: vib-cms-backend
-
   datasource:
     url: jdbc:postgresql://localhost:5432/vib_cms
     username: cms_local
-    password: ${CMS_DB_PASSWORD}
+    password: ${CMS_DB_PASSWORD:local_dev_password}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
-    properties:
-      hibernate:
-        format_sql: true
 
   data:
     redis:
       host: localhost
       port: 6379
+
+cms:
+  security:
+    # Local development only. Never activate this profile in production.
+    local-permit-all: true

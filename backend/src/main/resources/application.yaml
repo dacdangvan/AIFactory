@@ -1,3 +1,33 @@
 spring:
   application:
-    name: cms-backend
+    name: vib-cms-backend
+
+  jackson:
+    default-property-inclusion: non_null
+
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  sql:
+    init:
+      mode: never
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+cms:
+  security:
+    # Only overridden to true in application-local.yml.
+    local-permit-all: false
