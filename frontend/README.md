@@ -20,7 +20,7 @@ If your PostgreSQL container service is not named `postgres`, use the actual ser
 psql "postgresql://cms_local:local_dev_password@localhost:5432/vib_cms" -f database/local_rbac_ui_bootstrap.sql
 ```
 
-This creates a local-only `local-dev` identity, a CMS product and grants SYSTEM_ADMIN on that product. It does not create a production login.
+This creates a local-only `admin` identity, a CMS product and grants SYSTEM_ADMIN on that product. The local-only login is `admin` / `admin`; it is not a production login.
 
 ## Run the React app
 Terminal 1 – backend:
@@ -40,7 +40,7 @@ npm run dev
 
 Open http://localhost:5173.
 
-Vite proxies `/api/*` to http://localhost:8080. The console sends `X-Dev-User: local-dev`; the backend honors this header only when the `local` profile and `cms.security.local-permit-all=true` are active. The filter is not registered outside the local profile.
+Vite proxies `/api/*` to http://localhost:8080. The login screen uses HTTP Basic credentials `admin` / `admin`. The backend accepts these fixed credentials only when the `local` profile and `cms.security.local-permit-all=true` are active. The filter is not registered outside the local profile. Do not reuse this password in any shared environment.
 
 ## Screens
 - Users: list, search, activate/deactivate/lock.
