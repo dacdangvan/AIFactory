@@ -42,6 +42,19 @@ public class ContentConfigurationController {
             @RequestBody Map<String,Object> body, Authentication auth) {
         return ApiResponse.ok(service.createTemplateVersion(templateId, body, actor(auth)));
     }
+    @GetMapping("/authoring-templates/{templateId}/versions")
+    public ApiResponse<List<Map<String,Object>>> templateVersions(@PathVariable UUID templateId) {
+        return ApiResponse.ok(service.listTemplateVersions(templateId));
+    }
+    @PostMapping("/products/{productId}/workflow-bindings")
+    public ApiResponse<Map<String,Object>> bindWorkflow(@PathVariable UUID productId,
+            @RequestBody Map<String,Object> body, Authentication auth) {
+        UUID contentTypeId = body.get("contentTypeId") == null || String.valueOf(body.get("contentTypeId")).isBlank()
+                ? null : UUID.fromString(String.valueOf(body.get("contentTypeId")));
+        return ApiResponse.ok(service.bindWorkflow(productId, contentTypeId,
+                UUID.fromString(String.valueOf(body.get("workflowVersionId"))),
+                String.valueOf(body.get("bindingType")), actor(auth)));
+    }
     @PostMapping("/content-types/{contentTypeId}/template-bindings")
     public ApiResponse<Map<String,Object>> bindTemplate(@PathVariable UUID contentTypeId,
             @RequestBody Map<String,Object> body, Authentication auth) {
