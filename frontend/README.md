@@ -1,6 +1,6 @@
-# VIB CMS Admin – Phase 1.2
+# VIB CMS Admin – Phase 1.3
 
-React + TypeScript + Vite console for testing User Management and RBAC APIs.
+React + TypeScript + Vite console for testing User Management, RBAC and Content Management APIs.
 
 ## Prerequisites
 - Backend Phase 1.2 running with the `local` Spring profile on port 8080.
@@ -48,6 +48,21 @@ Vite proxies `/api/*` to http://localhost:8080. The login screen uses HTTP Basic
 - Assignments: assign/revoke product-scoped roles and optional expiry.
 - Authorization playground: invoke backend permission check.
 - Products: inspect products available for assignment.
+- Content Management: create and edit News, Investor Relations, Promotions and Guides; store vi-VN/en-US locale data and SEO metadata; create immutable content versions; submit for review, approve and publish.
+
+## Phase 1.3 Content Management API
+
+The backend applies Flyway migration `V3__phase_1_3_content_management.sql` and exposes:
+
+- `GET /api/v1/content/articles?productId={uuid}&limit=100`
+- `GET /api/v1/content/articles/{id}`
+- `POST /api/v1/content/articles?productId={uuid}`
+- `PUT /api/v1/content/articles/{id}`
+- `POST /api/v1/content/articles/{id}/submit`
+- `POST /api/v1/content/articles/{id}/approve`
+- `POST /api/v1/content/articles/{id}/publish`
+
+Article locale data is stored as a versioned JSON snapshot (`vi-VN`, `en-US`); SEO metadata is stored alongside each version. The current workflow is a minimal state sequence `DRAFT → IN_REVIEW → APPROVED → PUBLISHED`. Published/archived article records are not editable through the current update API.
 
 ## Microsoft SSO
 The local console is a development harness, not an SSO implementation. In UAT/production, use the Microsoft Entra ID login flow and send the verified access token as `Authorization: Bearer <token>`. Do not send `X-Dev-User` outside local development.
