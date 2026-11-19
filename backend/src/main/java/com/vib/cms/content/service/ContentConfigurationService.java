@@ -41,6 +41,13 @@ public class ContentConfigurationService {
             """, id);
     }
 
+    public List<Map<String,Object>> listTemplateVersions(UUID templateId) {
+        return jdbc.queryForList("""
+            SELECT id, template_id AS "templateId", version_no AS "versionNo", status, field_schema AS "fieldSchema"
+            FROM cms_authoring_template_versions WHERE template_id=? ORDER BY version_no DESC
+            """, templateId);
+    }
+
     public List<Map<String,Object>> listTemplates(UUID productId) {
         return jdbc.queryForList("""
             SELECT t.id, t.product_id AS "productId", t.code, t.name, t.description, t.status,
@@ -121,6 +128,29 @@ public class ContentConfigurationService {
             DO UPDATE SET is_default=true
             """, id, contentTypeId, templateVersionId, actor);
         return Map.of("contentTypeId",contentTypeId,"templateVersionId",templateVersionId,"isDefault",true);
+    }
+
+    @Transactional
+    public Map<String,Object> bindWorkflow(UUID productId, UUID contentTypeId, UUID workflowVersionId,
+                                           String bindingType, String actor) {
+        if (!"PRODUCT_DEFAULT".equals(bindingType) && !"CONTENT_TYPE_OVERRIDE".equals(bindingType))
+            throw new IllegalArgumentException("bindingType must be PRODUCT_DEFAULT or CONTENT_TYPE_OVERRIDE");
+        if ("CONTENT_TYPE_OVERRIDE".equals(bindingType) && contentTypeId == null)
+            throw new IllegalArgumentException("contentTypeId is required for CONTENT_TYPE_OVERRIDE");
+        jdbc.queryForObject("SELECT id FROM products WHERE id=?", UUID.class, productId);
+        jdbc.queryForObject("SELECT id FROM cms_workflow_versions WHERE id=?", UUID.class, workflowVersionId);
+        if ("PRODUCT_DEFAULT".equals(bindingType)) {
+            jdbc.update("DELETE FROM cms_workflow_bindings WHERE product_id=? AND binding_type='PRODUCT_DEFAULT'", productId);
+        } else {
+            jdbc.update("DELETE FROM cms_workflow_bindings WHERE content_type_id=? AND binding_type='CONTENT_TYPE_OVERRIDE'", contentTypeId);
+        }
+        UUID id=UUID.randomUUID();
+        jdbc.update("""
+            INSERT INTO cms_workflow_bindings(id,product_id,content_type_id,workflow_version_id,binding_type,created_by)
+            VALUES (?,?,?,?,?,?)
+            """, id, productId, contentTypeId, workflowVersionId, bindingType, actor);
+        return Map.of("id",id,"productId",productId,"contentTypeId",contentTypeId==null?"":contentTypeId,
+                "workflowVersionId",workflowVersionId,"bindingType",bindingType);
     }
 
     private String required(Map<?,?> body,String key) {
