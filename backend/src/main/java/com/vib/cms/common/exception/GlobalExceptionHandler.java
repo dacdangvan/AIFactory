@@ -41,6 +41,13 @@ public class GlobalExceptionHandler {
                         "Request body is malformed or contains an unsupported value"));
     }
 
+
+    @ExceptionHandler(java.util.NoSuchElementException.class)
+    ResponseEntity<?> missing(java.util.NoSuchElementException exception) {
+        return ResponseEntity.status(404)
+                .body(ApiResponse.failure("NOT_FOUND", exception.getMessage()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<?> badRequest(IllegalArgumentException exception) {
         return ResponseEntity.badRequest()
