@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,14 +28,36 @@ public class ArticleService {
     }
 
     public List<ArticleResponse> list(UUID productId, String type, String status, int limit) {
-        if (limit < 1 || limit > 100) throw new IllegalArgumentException("limit must be between 1 and 100");
-        return jdbc.query("""
+        if (limit < 1 || limit > 100) {
+            throw new IllegalArgumentException("limit must be between 1 and 100");
+        }
+
+        StringBuilder sql = new StringBuilder("""
                 SELECT a.*, v.locale_data::text AS locale_data, v.seo_data::text AS seo_data
                 FROM cms_articles a
-                JOIN cms_article_versions v ON v.article_id=a.id AND v.version_no=a.current_version
-                WHERE a.product_id=? AND (? IS NULL OR a.content_type=?) AND (? IS NULL OR a.status=?)
-                ORDER BY a.updated_at DESC LIMIT ?
-                """, this::map, productId, type, type, status, status, limit);
+                JOIN cms_article_versions v
+                  ON v.article_id = a.id AND v.version_no = a.current_version
+                WHERE a.product_id = ?
+                """);
+        List<Object> params = new ArrayList<>();
+        params.add(productId);
+
+        // Add optional filters only when supplied. Avoid expressions such as
+        // (? IS NULL OR column = ?) because PostgreSQL cannot infer the type
+        // of a NULL bind parameter in the IS NULL branch.
+        if (type != null && !type.isBlank()) {
+            sql.append(" AND a.content_type = ?");
+            params.add(type.trim());
+        }
+        if (status != null && !status.isBlank()) {
+            sql.append(" AND a.status = ?");
+            params.add(status.trim());
+        }
+
+        sql.append(" ORDER BY a.updated_at DESC LIMIT ?");
+        params.add(limit);
+
+        return jdbc.query(sql.toString(), this::map, params.toArray());
     }
 
     public ArticleResponse get(UUID id) {
