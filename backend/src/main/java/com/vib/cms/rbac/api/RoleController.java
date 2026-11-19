@@ -1,0 +1,7 @@
+package com.vib.cms.rbac.api;
+import com.vib.cms.common.api.ApiResponse;import com.vib.cms.rbac.service.RbacService;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import java.util.*;
+@RestController @RequestMapping("/api/v1/roles") public class RoleController {private final RbacService s;public RoleController(RbacService s){this.s=s;}
+@GetMapping public ApiResponse<?> list(Authentication a){s.requireAdmin(a.getName());return ApiResponse.ok(s.roles());}
+@GetMapping("/permissions") public ApiResponse<?> permissions(Authentication a){s.requireAdmin(a.getName());return ApiResponse.ok(s.permissions());}
+@PostMapping("/permissions") public ApiResponse<?> create(@jakarta.validation.Valid @RequestBody PermissionRequest r,Authentication a){s.requireAdmin(a.getName());var p=s.createPermission(r);s.audit(a.getName(),"PERMISSION_UPSERTED","PERMISSION",(UUID)p.get("id"),null,null,p);return ApiResponse.ok(p);}
+@PostMapping("/{roleId}/permissions") public ApiResponse<?> attach(@PathVariable UUID roleId,@jakarta.validation.Valid @RequestBody RolePermissionRequest r,Authentication a){s.requireAdmin(a.getName());s.attachPermission(roleId,r.permissionId());s.audit(a.getName(),"ROLE_PERMISSION_ATTACHED","ROLE",roleId,null,null,Map.of("permissionId",r.permissionId()));return ApiResponse.ok(Map.of("roleId",roleId,"permissionId",r.permissionId()));}}

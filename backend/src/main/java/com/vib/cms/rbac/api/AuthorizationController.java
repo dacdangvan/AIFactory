@@ -1,0 +1,4 @@
+package com.vib.cms.rbac.api;
+import com.vib.cms.common.api.ApiResponse;import com.vib.cms.rbac.service.RbacService;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import java.util.*;
+@RestController @RequestMapping("/api/v1/authorization") public class AuthorizationController {private final RbacService s;public AuthorizationController(RbacService s){this.s=s;}
+@GetMapping("/check") public ApiResponse<?> check(@RequestParam UUID productId,@RequestParam String resource,@RequestParam String action,@RequestParam(required=false) String state,Authentication a){return ApiResponse.ok(Map.of("allowed",s.allowed(a.getName(),productId,resource,action,state),"productId",productId,"resource",resource,"action",action,"state",state==null?"*":state));}}

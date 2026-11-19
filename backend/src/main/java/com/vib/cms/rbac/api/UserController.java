@@ -1,0 +1,6 @@
+package com.vib.cms.rbac.api;
+import com.vib.cms.common.api.ApiResponse;import com.vib.cms.rbac.service.RbacService;import jakarta.validation.Valid;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import java.util.*;
+@RestController @RequestMapping("/api/v1/users") public class UserController {private final RbacService s;public UserController(RbacService s){this.s=s;}
+@GetMapping public ApiResponse<?> list(@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) String status,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size,Authentication a){s.requireAdmin(a.getName());if(page<0||size<1||size>100)throw new IllegalArgumentException("page >= 0 and size must be 1..100");return ApiResponse.ok(s.users(keyword,status,page,size));}
+@GetMapping("/{id}") public ApiResponse<?> get(@PathVariable UUID id,Authentication a){s.requireAdmin(a.getName());return ApiResponse.ok(s.user(id));}
+@PutMapping("/{id}") public ApiResponse<?> update(@PathVariable UUID id,@Valid @RequestBody UserRequest r,Authentication a){s.requireAdmin(a.getName());var before=s.user(id);var after=s.updateUser(id,r);s.audit(a.getName(),"USER_UPDATED","USER",id,null,before,after);return ApiResponse.ok(after);}}

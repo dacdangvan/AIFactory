@@ -1,0 +1,6 @@
+package com.vib.cms.rbac.api;
+import com.vib.cms.common.api.ApiResponse;import com.vib.cms.rbac.service.RbacService;import jakarta.validation.Valid;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import java.util.*;
+@RestController @RequestMapping("/api/v1/assignments") public class AssignmentController {private final RbacService s;public AssignmentController(RbacService s){this.s=s;}
+@PostMapping public ApiResponse<?> assign(@Valid @RequestBody AssignmentRequest r,Authentication a){s.requireAdmin(a.getName());s.assign(r,a.getName());s.audit(a.getName(),"ROLE_ASSIGNED","USER",r.userId(),r.productId(),null,r);return ApiResponse.ok(s.assignments(r.userId()));}
+@GetMapping("/users/{id}") public ApiResponse<?> list(@PathVariable UUID id,Authentication a){s.requireAdmin(a.getName());return ApiResponse.ok(s.assignments(id));}
+@DeleteMapping public ApiResponse<?> revoke(@RequestParam UUID userId,@RequestParam UUID productId,@RequestParam UUID roleId,Authentication a){s.requireAdmin(a.getName());s.revoke(userId,productId,roleId);s.audit(a.getName(),"ROLE_REVOKED","USER",userId,productId,null,Map.of("roleId",roleId));return ApiResponse.ok(Map.of("revoked",true));}}

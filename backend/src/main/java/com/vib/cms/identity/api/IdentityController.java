@@ -1,5 +1,6 @@
 package com.vib.cms.identity.api;
-import com.vib.cms.common.api.ApiResponse;import org.springframework.security.core.Authentication;import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;import org.springframework.web.bind.annotation.*;import java.util.*;
-@RestController @RequestMapping("/api/v1/identity") public class IdentityController {
- @GetMapping("/me") public ApiResponse<Map<String,Object>> me(Authentication auth){if(auth instanceof JwtAuthenticationToken jwt)return ApiResponse.ok(Map.of("subject",jwt.getToken().getSubject(),"username",jwt.getName(),"claims",jwt.getToken().getClaims()));return ApiResponse.ok(Map.of("username",auth==null?"local-dev":auth.getName()));}
-}
+import com.vib.cms.common.api.ApiResponse;import com.vib.cms.rbac.service.RbacService;import org.springframework.security.core.Authentication;import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;import org.springframework.web.bind.annotation.*;import java.util.*;
+@RestController @RequestMapping("/api/v1/identity") public class IdentityController {private final RbacService s;public IdentityController(RbacService s){this.s=s;}
+@GetMapping("/me") public ApiResponse<?> me(Authentication a){if(a instanceof JwtAuthenticationToken j)return ApiResponse.ok(Map.of("subject",j.getToken().getSubject(),"username",a.getName(),"claims",j.getToken().getClaims()));return ApiResponse.ok(Map.of("username",a==null?"local-dev":a.getName()));}
+@PostMapping("/sync") public ApiResponse<?> sync(Authentication a){if(!(a instanceof JwtAuthenticationToken j))throw new org.springframework.security.access.AccessDeniedException("Verified Microsoft Entra ID JWT required");var c=j.getToken().getClaims();String sub=j.getToken().getSubject(),username=first(c,"preferred_username","upn","email");if(username==null)username=sub;return ApiResponse.ok(s.upsertUser(username,first(c,"email","preferred_username"),first(c,"name"),"MICROSOFT_SSO",sub,"ACTIVE"));}
+private String first(Map<String,Object> c,String...ks){for(String k:ks){Object v=c.get(k);if(v!=null&&!v.toString().isBlank())return v.toString();}return null;}}
