@@ -35,7 +35,8 @@ export default function ContentManagement({products,username,password}:Props){
  const selectedProduct=useMemo(()=>products.find(p=>p.id===productId),[products,productId]);
  useEffect(()=>{if(!productId&&products.length)setProductId(products[0].id)},[products,productId]);
  const load=async()=>{if(!productId)return;setBusy(true);setError("");try{const [t,a,w]=await Promise.all([api("/api/v1/content-types?productId="+productId,username,password),api("/api/v1/authoring-templates?productId="+productId,username,password),api("/api/v1/workflows?productId="+productId,username,password)]);setTypes(t||[]);setTemplates(a||[]);setWorkflows(w||[])}catch(e:any){setError(e.message)}finally{setBusy(false)}};
- useEffect(()=>{load()},[productId]);\n useEffect(()=>{if(tab==="assets")loadStorage()},[tab]);
+ useEffect(()=>{load()},[productId]);
+ useEffect(()=>{if(tab==="assets")loadStorage()},[tab]);
  const run=async(fn:()=>Promise<any>,message:string)=>{setBusy(true);setError("");setNotice("");try{await fn();setNotice(message);await load()}catch(e:any){setError(e.message)}finally{setBusy(false)}};
  const createType=()=>run(()=>api("/api/v1/content-types?productId="+productId,username,password,{method:"POST",body:JSON.stringify(typeForm)}),"Đã tạo Content Type");
  const createTemplate=()=>run(async()=>{const t=await api("/api/v1/authoring-templates?productId="+productId,username,password,{method:"POST",body:JSON.stringify(templateForm)});setSelectedTemplate(t.id)},"Đã tạo Authoring Template");
