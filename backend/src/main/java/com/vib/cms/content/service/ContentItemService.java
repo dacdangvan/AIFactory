@@ -207,14 +207,21 @@ public class ContentItemService {
             Object value = values.get(code);
             boolean required = Boolean.TRUE.equals(field.get("required"));
             boolean localized = Boolean.TRUE.equals(field.get("localized"));
+            if (localized && value != null && !(value instanceof Map<?,?>)) {
+                throw new IllegalArgumentException(code+" must contain locale-keyed values");
+            }
             if (localized && value instanceof Map<?,?> localeValues) {
                 if (required && localeValues.values().stream().allMatch(this::blank)) throw new IllegalArgumentException(code+" is required");
             } else if (required && blank(value)) {
                 throw new IllegalArgumentException(code+" is required");
             }
-            if (blank(value)) continue;
-            if ("repeater".equals(type) || "REPEATER".equals(Objects.toString(field.get("cardinality"), ""))) {
-                if (!(value instanceof List<?> rows)) throw new IllegalArgumentException(code+" must be a list");
+            boolean repeater = "repeater".equals(type) || "REPEATER".equals(Objects.toString(field.get("cardinality"), ""));
+            if (blank(value) && !repeater) continue;
+            if (repeater) {
+                List<?> rows;
+                if (value == null) rows=List.of();
+                else if (value instanceof List<?> list) rows=list;
+                else throw new IllegalArgumentException(code+" must be a list");
                 Map<String,Object> options=objectMap(field.get("options"));
                 int min=number(options.get("minItems"),0), max=number(options.get("maxItems"),0);
                 if (rows.size()<min) throw new IllegalArgumentException(code+" requires at least "+min+" items");
