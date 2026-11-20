@@ -251,7 +251,7 @@ public class ContentItemService {
         String owner=Objects.toString(context.get("ownerUsername"),"");
         Set<String> userRoles=userRoles(actor,productId);
         List<Map<String,Object>> rows=jdbc.queryForList("""
-            SELECT a.action_code AS "actionCode",a.action_name AS "actionName",
+            SELECT a.action_code AS "actionCode",a.action_name AS "actionName",a.changes_state AS "actionChangesState",
                    p.effect,r.rule_definition::text AS "ruleDefinition",
                    t.to_state_id AS "toStateId",target.state_code AS "toStateCode",
                    target.state_name AS "toStateName"
@@ -273,7 +273,7 @@ public class ContentItemService {
                 x.put("code",code);x.put("name",row.get("actionName"));
                 x.put("allowed",false);x.put("denied",false);
                 x.put("toStateCode",row.get("toStateCode"));x.put("toStateName",row.get("toStateName"));
-                x.put("changesState",row.get("toStateId")!=null);
+                x.put("changesState",row.get("toStateId")!=null);\n                x.put("actionChangesState",row.get("actionChangesState"));
                 return x;
             });
             Map<String,Object> rule=parseObject(Objects.toString(row.get("ruleDefinition"),"{}"));
