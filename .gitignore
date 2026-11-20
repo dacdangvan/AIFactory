@@ -93,3 +93,6 @@ venv/
 *.dump
 *.backup
 *.sql.gz
+
+# Uploaded assets created by local CMS development
+**/storage/assets/
