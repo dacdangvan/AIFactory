@@ -58,7 +58,7 @@ export default function ContentItemManagement({products,username,password}:Props
   try{await loadTypes();await loadItems()}catch(e:any){setError(e.message)}finally{setBusy(false)}
  };
  useEffect(()=>{if(productId){setBusy(true);setError("");Promise.all([loadTypes(),loadItems()]).catch((e:any)=>setError(e.message)).finally(()=>setBusy(false))}},[productId]);
- useEffect(()=>{if(productId)loadItems().catch((e:any)=>setError(e.message))},[typeId]);
+ useEffect(()=>{if(productId)loadItems().catch((e:any)=>setError(e.message))},[typeId,keyword]);
  const run=async(fn:()=>Promise<void>,message:string)=>{
   setBusy(true);setError("");setNotice("");
   try{await fn();setNotice(message);await loadItems()}catch(e:any){setError(e.message||"Có lỗi xảy ra")}finally{setBusy(false)}
