@@ -19,7 +19,10 @@ const starterRules:RuleDef[]=[{code:"EDITOR",name:"Content Editor",roles:"EDITOR
 export default function ContentManagement({products,username,password}:Props){
  const [productId,setProductId]=useState("");const [tab,setTab]=useState<"types"|"templates"|"workflows"|"assets">("types");
  const [types,setTypes]=useState<Row[]>([]),[templates,setTemplates]=useState<Row[]>([]),[workflows,setWorkflows]=useState<Row[]>([]);
- const [typeForm,setTypeForm]=useState({code:"",name:"",parentId:"",description:""});
+ const [typeForm,setTypeForm]=useState({code:"",name:"",parentId:"",description:"",templateVersionId:"",workflowVersionId:""});
+ const [editingType,setEditingType]=useState<string|null>(null),[showTypeForm,setShowTypeForm]=useState(false);
+ const [editingTemplate,setEditingTemplate]=useState<string|null>(null),[showTemplateBuilder,setShowTemplateBuilder]=useState(false);
+ const [editingWorkflow,setEditingWorkflow]=useState<string|null>(null),[showWorkflowBuilder,setShowWorkflowBuilder]=useState(false);
  const [templateForm,setTemplateForm]=useState({code:"",name:"",description:""}),[selectedTemplate,setSelectedTemplate]=useState("");
  const [groups,setGroups]=useState<GroupDef[]>([{id:"g_"+Date.now(),code:"general",name:"General Information"}]);
  const [fields,setFields]=useState<FieldDef[]>([]),[selectedField,setSelectedField]=useState("");
@@ -38,8 +41,13 @@ export default function ContentManagement({products,username,password}:Props){
  useEffect(()=>{load()},[productId]);
  useEffect(()=>{if(tab==="assets")loadStorage()},[tab]);
  const run=async(fn:()=>Promise<any>,message:string)=>{setBusy(true);setError("");setNotice("");try{await fn();setNotice(message);await load()}catch(e:any){setError(e.message)}finally{setBusy(false)}};
- const createType=()=>run(()=>api("/api/v1/content-types?productId="+productId,username,password,{method:"POST",body:JSON.stringify(typeForm)}),"Đã tạo Content Type");
- const createTemplate=()=>run(async()=>{const t=await api("/api/v1/authoring-templates?productId="+productId,username,password,{method:"POST",body:JSON.stringify(templateForm)});setSelectedTemplate(t.id)},"Đã tạo Authoring Template");
+ const saveType=()=>run(async()=>{const payload={code:typeForm.code,name:typeForm.name,parentId:typeForm.parentId||null,description:typeForm.description};const saved=editingType?await api("/api/v1/content-types/"+editingType,username,password,{method:"PUT",body:JSON.stringify(payload)}):await api("/api/v1/content-types?productId="+productId,username,password,{method:"POST",body:JSON.stringify(payload)});if(typeForm.templateVersionId)await api("/api/v1/content-types/"+saved.id+"/template-bindings",username,password,{method:"POST",body:JSON.stringify({templateVersionId:typeForm.templateVersionId})});if(typeForm.workflowVersionId)await api("/api/v1/products/"+productId+"/workflow-bindings",username,password,{method:"POST",body:JSON.stringify({bindingType:"CONTENT_TYPE_OVERRIDE",contentTypeId:saved.id,workflowVersionId:typeForm.workflowVersionId})});setShowTypeForm(false);setEditingType(null);setTypeForm({code:"",name:"",parentId:"",description:"",templateVersionId:"",workflowVersionId:""})},editingType?"Đã cập nhật Content Type và các binding":"Đã tạo Content Type và các binding");
+ const editType=(t:Row)=>{setEditingType(t.id);setTypeForm({code:t.code,name:t.name,parentId:t.parentId||"",description:t.description||"",templateVersionId:t.templateVersionId||"",workflowVersionId:t.workflowVersionId||""});setShowTypeForm(true)};
+ const changeStatus=(kind:"content-types"|"authoring-templates"|"workflows",id:string,status:string)=>run(()=>api("/api/v1/"+kind+"/"+id+"/status",username,password,{method:"PATCH",body:JSON.stringify({status})}),"Đã cập nhật trạng thái");
+ const archiveItem=(kind:"content-types"|"authoring-templates"|"workflows",id:string)=>{if(window.confirm("Bạn có chắc muốn xoá mục này? Dữ liệu sẽ được chuyển sang Archived."))run(()=>api("/api/v1/"+kind+"/"+id,username,password,{method:"DELETE"}),"Đã chuyển sang Archived")};
+ const editTemplate=(t:Row)=>{setEditingTemplate(t.id);setTemplateForm({code:t.code,name:t.name,description:t.description||""});setSelectedTemplate(t.id);setShowTemplateBuilder(true)};
+ const editWorkflow=(w:Row)=>{setEditingWorkflow(w.id);setWorkflowMeta({code:w.code,name:w.name,description:w.description||"",global:!w.productId});setShowWorkflowBuilder(true)};
+ const createTemplate=()=>run(async()=>{const t=editingTemplate?await api("/api/v1/authoring-templates/"+editingTemplate,username,password,{method:"PUT",body:JSON.stringify(templateForm)}):await api("/api/v1/authoring-templates?productId="+productId,username,password,{method:"POST",body:JSON.stringify(templateForm)});setSelectedTemplate(t.id);setShowTemplateBuilder(true)},"Đã lưu thông tin Authoring Template");
  const updateField=(id:string,patch:Partial<FieldDef>)=>setFields(old=>old.map(f=>f.id===id?{...f,...patch}:f));
  const moveField=(id:string,direction:number)=>setFields(old=>{const i=old.findIndex(f=>f.id===id),j=i+direction;if(i<0||j<0||j>=old.length)return old;const a=[...old];[a[i],a[j]]=[a[j],a[i]];return a});
  const moveGroup=(id:string,direction:number)=>setGroups(old=>{const i=old.findIndex(g=>g.id===id),j=i+direction;if(i<0||j<0||j>=old.length)return old;const a=[...old];[a[i],a[j]]=[a[j],a[i]];return a});
