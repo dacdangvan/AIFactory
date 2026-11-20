@@ -98,7 +98,10 @@ export default function ContentItemManagement({products,username,password}:Props
   const payload={code:code.trim(),fields,expectedVersion};
   if(editingId){await api("/api/v1/content-items/"+editingId,username,password,{method:"PUT",body:JSON.stringify(payload)});setExpectedVersion(expectedVersion+1);return editingId;}
   const created=await api("/api/v1/content-items?productId="+productId+"&contentTypeId="+typeId,username,password,{method:"POST",body:JSON.stringify(payload)});
-  return String(created.id);
+  const createdId=String(created.id);setEditingId(createdId);setExpectedVersion(Number(created.currentVersion||1));
+  const wf=await api("/api/v1/content-items/"+createdId+"/workflow-actions",username,password);
+  setWorkflowActions(wf.availableActions||[]);setWorkflowState(wf);setReadOnly(!wf.canEdit);
+  return createdId;
  };
  const performItemAction=async(id:string,action:string,comment?:string)=>{
   const wf=await api("/api/v1/content-items/"+id+"/workflow-actions",username,password);
