@@ -17,9 +17,11 @@ public class ContentConfigurationService {
 
     public List<Map<String,Object>> listContentTypes(UUID productId) {
         return jdbc.queryForList("""
-            SELECT id, product_id AS "productId", parent_id AS "parentId", code, name,
-                   description, sort_order AS "sortOrder", status
-            FROM cms_content_types WHERE product_id=? AND status <> 'ARCHIVED'
+            SELECT ct.id, ct.product_id AS "productId", ct.parent_id AS "parentId", ct.code, ct.name,
+                   ct.description, ct.sort_order AS "sortOrder", ct.status,
+                   (SELECT b.template_version_id FROM cms_content_type_template_bindings b WHERE b.content_type_id=ct.id AND b.is_default=true LIMIT 1) AS "templateVersionId",
+                   (SELECT wb.workflow_version_id FROM cms_workflow_bindings wb WHERE wb.content_type_id=ct.id AND wb.binding_type='CONTENT_TYPE_OVERRIDE' LIMIT 1) AS "workflowVersionId"
+            FROM cms_content_types ct WHERE ct.product_id=? AND ct.status <> 'ARCHIVED'
             ORDER BY parent_id NULLS FIRST, sort_order, name
             """, productId);
     }
@@ -78,7 +80,8 @@ public class ContentConfigurationService {
     public List<Map<String,Object>> listTemplates(UUID productId) {
         return jdbc.queryForList("""
             SELECT t.id, t.product_id AS "productId", t.code, t.name, t.description, t.status,
-                   COALESCE((SELECT max(v.version_no) FROM cms_authoring_template_versions v WHERE v.template_id=t.id),0) AS "latestVersion"
+                   COALESCE((SELECT max(v.version_no) FROM cms_authoring_template_versions v WHERE v.template_id=t.id),0) AS "latestVersion",
+                   (SELECT v.id FROM cms_authoring_template_versions v WHERE v.template_id=t.id ORDER BY v.version_no DESC LIMIT 1) AS "latestVersionId"
             FROM cms_authoring_templates t WHERE t.product_id=? AND t.status <> 'ARCHIVED'
             ORDER BY t.name
             """, productId);
