@@ -58,3 +58,10 @@ Workflow definitions are versioned and Content Items pin a workflow version. The
 - Task assignment/delegation and SLA timers are not yet implemented.
 - Publish currently changes workflow state only; immutable release manifests, route activation, cache invalidation and Public Delivery integration remain a later publishing phase.
 - The role aliases above are a transitional mapping. Production must use the agreed Entra ID claims and authoritative RBAC assignments.
+
+
+## Unpublish
+
+- Content Items in workflow state `PUBLISHED` expose a publisher-only `UNPUBLISH` action to `DEV_ADMIN`, `PO_ADMIN`, and `SYSTEM_ADMIN`.
+- The action moves the workflow instance back to the `APPROVED` state and records the actor/action in workflow history. The workflow version must contain an `APPROVED` state.
+- This is currently a workflow-state unpublish only. It does not yet deactivate a public route, update a release manifest, invalidate CDN/cache, or remove content from the Next.js Public Delivery API; those require the Publishing/Delivery integration phase.
