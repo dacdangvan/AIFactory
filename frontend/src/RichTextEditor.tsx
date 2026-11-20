@@ -1,8 +1,6 @@
 import {useEffect} from "react";
 import {EditorContent,useEditor} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -13,8 +11,6 @@ export default function RichTextEditor({value,onChange,placeholder="Bắt đầu
  const editor=useEditor({
   extensions:[
    StarterKit.configure({heading:{levels:[1,2,3]}}),
-   Underline,
-   Link.configure({openOnClick:false,autolink:true,linkOnPaste:true}),
    TextAlign.configure({types:["heading","paragraph"]}),
    Image.configure({inline:false,allowBase64:false}),
    Placeholder.configure({placeholder})
