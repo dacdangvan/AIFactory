@@ -20,7 +20,9 @@ const blankValue=(field:FieldDef):any=>{
 };
 const slug=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 
-const WorkflowIcon=({code}:{code:string})=>{switch(code){case "SUBMIT":case "RESUBMIT":return <Send size={14}/>;case "RECALL":return <Undo2 size={14}/>;case "APPROVE":return <CheckCircle2 size={14}/>;case "REJECT":return <XCircle size={14}/>;case "PUBLISH":return <Globe size={14}/>;case "DELETE":return <Trash2 size={14}/>;case "SAVE":return <Save size={14}/>;default:return <Workflow size={14}/>;}};\n\nexport default function ContentItemManagement({products,username,password}:Props){
+const WorkflowIcon=({code}:{code:string})=>{switch(code){case "SUBMIT":case "RESUBMIT":return <Send size={14}/>;case "RECALL":return <Undo2 size={14}/>;case "APPROVE":return <CheckCircle2 size={14}/>;case "REJECT":return <XCircle size={14}/>;case "PUBLISH":return <Globe size={14}/>;case "DELETE":return <Trash2 size={14}/>;case "SAVE":return <Save size={14}/>;default:return <Workflow size={14}/>;}};
+
+export default function ContentItemManagement({products,username,password}:Props){
  const [productId,setProductId]=useState("");
  const [types,setTypes]=useState<Row[]>([]);
  const [typeId,setTypeId]=useState("");
