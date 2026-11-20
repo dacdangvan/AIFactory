@@ -34,7 +34,8 @@ export default function ContentItemManagement({products,username,password}:Props
  const [expectedVersion,setExpectedVersion]=useState(1);
  const [workflowActions,setWorkflowActions]=useState<Row[]>([]);
  const [workflowState,setWorkflowState]=useState<Row|null>(null);
- const [readOnly,setReadOnly]=useState(false);\n const [workflowHistory,setWorkflowHistory]=useState<Row[]>([]);
+ const [readOnly,setReadOnly]=useState(false);
+ const [workflowHistory,setWorkflowHistory]=useState<Row[]>([]);
  const [showEditor,setShowEditor]=useState(false);
  const [keyword,setKeyword]=useState("");
  const [busy,setBusy]=useState(false);
