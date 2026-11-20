@@ -77,7 +77,7 @@ export default function ContentItemManagement({products,username,password}:Props
   const readImage=(locale:string)=>{
    const field=seoSourceFields.image;if(!field)return "";
    let raw=fields[field.code];
-   if(field.localized&&raw&&typeof raw==="object"&&!Array.isArray(raw))raw=raw[locale]??raw["vi-VN"]??raw["en-US"]??"";
+   if(field.localized&&raw&&typeof raw==="object"&&!Array.isArray(raw)&&!raw.url&&!raw.id)raw=raw[locale]??raw["vi-VN"]??raw["en-US"]??"";
    if(Array.isArray(raw))raw=raw[0];
    return typeof raw==="string"?raw:(raw?.url||"");
   };
@@ -260,6 +260,11 @@ export default function ContentItemManagement({products,username,password}:Props
       <div className="seo-locale-grid">
        {["vi-VN","en-US"].map(locale=>{
         const value=seo[locale]||{};
+        const imageField=seoSourceFields.image;
+        let contentImage=imageField?fields[imageField.code]:"";
+        if(imageField?.localized&&contentImage&&typeof contentImage==="object"&&!Array.isArray(contentImage)&&!contentImage.url&&!contentImage.id)contentImage=contentImage[locale]??contentImage["vi-VN"]??contentImage["en-US"]??"";
+        if(Array.isArray(contentImage))contentImage=contentImage[0];
+        const contentImageUrl=typeof contentImage==="string"?contentImage:(contentImage?.url||"");
         const update=(key:string,next:string)=>setSeo((old:Row)=>({...old,[locale]:{...(old[locale]||{}),[key]:next}}));
         const titleField=schemaFields.find(f=>f.localized&&/title|name|heading/i.test(f.code+" "+f.label));
         const sourceTitle=titleField?(fields[titleField.code]?.[locale]||""):"";
@@ -275,7 +280,7 @@ export default function ContentItemManagement({products,username,password}:Props
          <details className="seo-og-details"><summary>Open Graph / Social Sharing</summary>
           <label className="field"><span>OG Title</span><input value={value.ogTitle||""} onChange={e=>update("ogTitle",e.target.value)} placeholder="Mặc định dùng SEO Title"/></label>
           <label className="field"><span>OG Description</span><textarea rows={2} value={value.ogDescription||""} onChange={e=>update("ogDescription",e.target.value)} placeholder="Mặc định dùng Meta Description"/></label>
-          {seoSourceFields.image?<div className="seo-og-image-source"><span className="field-label">OG Image</span><div className="seo-og-image-linked"><span>Đang lấy ảnh từ trường <b>{seoSourceFields.image.label||seoSourceFields.image.code}</b> trong Content</span></div>{value.ogImage&&<><img className="seo-og-image-preview" src={value.ogImage} alt="Open Graph preview"/><small>Ảnh được đồng bộ tự động từ nội dung ảnh.</small></>}</div>:<div className="seo-og-image-editor"><label className="field"><span>OG Image URL</span><input value={value.ogImage||""} onChange={e=>update("ogImage",e.target.value)} placeholder="https://example.com/image.jpg"/></label><div className="seo-og-upload"><AssetField value={value.ogImage?{url:value.ogImage,name:value.ogImage.split("/").pop()||"OG Image",contentType:"image/*"}:""} onChange={(asset:any)=>update("ogImage",asset?.url||"")} productId={productId} username={username} password={password} accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"/></div><small>Nhập URL ảnh hoặc upload/chọn ảnh từ Media Library. Tối đa 20 MB.</small>{value.ogImage&&<img className="seo-og-image-preview" src={value.ogImage} alt="Open Graph preview"/>}</div>}
+          {seoSourceFields.image&&contentImageUrl?<div className="seo-og-image-source"><span className="field-label">OG Image</span><div className="seo-og-image-linked"><span>Đang lấy ảnh từ trường <b>{seoSourceFields.image.label||seoSourceFields.image.code}</b> trong Content</span></div>{value.ogImage&&<><img className="seo-og-image-preview" src={value.ogImage} alt="Open Graph preview"/><small>Ảnh được đồng bộ tự động từ nội dung ảnh.</small></>}</div>:<div className="seo-og-image-editor"><label className="field"><span>OG Image URL</span><input value={value.ogImage||""} onChange={e=>update("ogImage",e.target.value)} placeholder="https://example.com/image.jpg"/></label><div className="seo-og-upload"><AssetField value={value.ogImage?{url:value.ogImage,name:value.ogImage.split("/").pop()||"OG Image",contentType:"image/*"}:""} onChange={(asset:any)=>update("ogImage",asset?.url||"")} productId={productId} username={username} password={password} accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"/></div><small>Nhập URL ảnh hoặc upload/chọn ảnh từ Media Library. Tối đa 20 MB.</small>{value.ogImage&&<img className="seo-og-image-preview" src={value.ogImage} alt="Open Graph preview"/>}</div>}
          </details>
         </div>;
        })}
