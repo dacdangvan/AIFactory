@@ -3,7 +3,7 @@ import {Plus,RefreshCw,FilePlus2,Edit3,Trash2,Save,ArrowLeft,Search,Languages,La
 
 type Row=Record<string,any>;
 type Props={products:{id:string;code:string;name:string}[];username:string;password:string};
-type FieldDef={code:string;label:string;type:string;group?:string;localized?:boolean;cardinality?:string;multiple?:boolean;required?:boolean;options?:{values?:string[];placeholder?:string;defaultValue?:any};validation?:Record<string,any>;itemFields?:string[];minItems?:number;maxItems?:number};
+type FieldDef={code:string;label:string;type:string;group?:string;localized?:boolean;cardinality?:string;multiple?:boolean;required?:boolean;options?:{values?:string[];placeholder?:string;defaultValue?:any;minItems?:string|number;maxItems?:string|number};validation?:Record<string,any>;itemFields?:string[];minItems?:number;maxItems?:number};
 const api=async(path:string,user:string,pass:string,options:RequestInit={})=>{
  const response=await fetch(path,{...options,headers:{"Content-Type":"application/json","Authorization":"Basic "+btoa(user+":"+pass),...(options.headers||{})}});
  const body=await response.json().catch(()=>null);
@@ -13,7 +13,7 @@ const api=async(path:string,user:string,pass:string,options:RequestInit={})=>{
 const inputValue=(value:any)=>value==null?"":String(value);
 const blankValue=(field:FieldDef):any=>{
  if(field.localized)return {"vi-VN":"","en-US":""};
- if(field.type==="repeater"||field.cardinality==="REPEATER"||field.multiple||field.cardinality==="MULTIPLE")return [];
+ if(field.type==="repeater"||field.cardinality==="REPEATER"||field.multiple||field.cardinality==="MULTIPLE"||(field.type==="checkbox"&&(field.options?.values||[]).length>0))return [];
  return field.options?.defaultValue??"";
 };
 const slug=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -115,7 +115,7 @@ export default function ContentItemManagement({products,username,password}:Props
   if(field.type==="repeater"||field.cardinality==="REPEATER"){
    const rows=Array.isArray(value)?value:[];
    const children=schemaFields.filter(f=>(field.itemFields||[]).includes(f.code));
-   return <div className="repeater-list">{rows.map((row:any,index:number)=><div className="repeater-row" key={index}><div className="repeater-head"><b>{field.label} #{index+1}</b><button type="button" className="danger-ghost" onClick={()=>onChange(rows.filter((_,i)=>i!==index))}><Trash2 size={14}/> Xóa</button></div>{children.map(child=><div className="field" key={child.code}><span>{child.label}{child.required?" *":""}</span>{child.localized?<div className="locale-grid">{["vi-VN","en-US"].map(locale=><label key={locale}><small>{locale}</small>{renderControl(child,row?.[child.code]?.[locale]??"",v=>onChange(rows.map((r,i)=>i===index?{...r,[child.code]:{...(r?.[child.code]||{}),[locale]:v}}:r)))}</label>)}</div>:renderControl(child,row?.[child.code],v=>onChange(rows.map((r,i)=>i===index?{...r,[child.code]:v}:r)))}</div>)}</div>)}<button type="button" className="secondary" onClick={()=>onChange([...rows,Object.fromEntries(children.map(f=>[f.code,blankValue(f)]))])} disabled={!!field.maxItems&&rows.length>=field.maxItems}><Plus size={14}/> Thêm {field.label.toLowerCase()}</button></div>;
+   return <div className="repeater-list">{rows.map((row:any,index:number)=><div className="repeater-row" key={index}><div className="repeater-head"><b>{field.label} #{index+1}</b><button type="button" className="danger-ghost" onClick={()=>onChange(rows.filter((_,i)=>i!==index))}><Trash2 size={14}/> Xóa</button></div>{children.map(child=><div className="field" key={child.code}><span>{child.label}{child.required?" *":""}</span>{child.localized?<div className="locale-grid">{["vi-VN","en-US"].map(locale=><label key={locale}><small>{locale}</small>{renderControl(child,row?.[child.code]?.[locale]??"",v=>onChange(rows.map((r,i)=>i===index?{...r,[child.code]:{...(r?.[child.code]||{}),[locale]:v}}:r)))}</label>)}</div>:renderControl(child,row?.[child.code],v=>onChange(rows.map((r,i)=>i===index?{...r,[child.code]:v}:r)))}</div>)}</div>)}<button type="button" className="secondary" onClick={()=>onChange([...rows,Object.fromEntries(children.map(f=>[f.code,blankValue(f)]))])} disabled={!!Number(field.options?.maxItems)&&rows.length>=Number(field.options?.maxItems)}><Plus size={14}/> Thêm {field.label.toLowerCase()}</button></div>;
   }
   if(field.localized)return <div className="locale-grid">{["vi-VN","en-US"].map(locale=><label key={locale} className="field"><span><Languages size={13}/> {locale}</span>{renderControl(field,value?.[locale]??"",v=>onChange({...((value&&typeof value==="object")?value:{}),[locale]:v}))}</label>)}</div>;
   if(field.multiple||field.cardinality==="MULTIPLE"){
