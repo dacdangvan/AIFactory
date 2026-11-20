@@ -31,6 +31,7 @@ export default function ContentItemManagement({products,username,password}:Props
  const [itemActions,setItemActions]=useState<Record<string,Row[]>>({});
  const [definition,setDefinition]=useState<Row|null>(null);
  const [fields,setFields]=useState<Record<string,any>>({});
+ const [seo,setSeo]=useState<Row>(emptySeo());
  const [code,setCode]=useState("");
  const [editingId,setEditingId]=useState<string|null>(null);
  const [expectedVersion,setExpectedVersion]=useState(1);
@@ -87,7 +88,7 @@ export default function ContentItemManagement({products,username,password}:Props
    setDefinition(d);
    const next:Record<string,any>={};
    for(const f of (d.fieldSchema?.fields||[]) as FieldDef[])next[f.code]=blankValue(f);
-   setFields(next);setCode("");setEditingId(null);setExpectedVersion(1);setWorkflowActions([]);setWorkflowState(null);setWorkflowHistory([]);setReadOnly(false);setShowEditor(true);
+   setFields(next);setSeo(emptySeo());setCode("");setEditingId(null);setExpectedVersion(1);setWorkflowActions([]);setWorkflowState(null);setWorkflowHistory([]);setReadOnly(false);setShowEditor(true);
   }catch(e:any){setError(e.message)}finally{setBusy(false)}
  };
  const startEdit=async(item:Row)=>{
@@ -98,7 +99,7 @@ export default function ContentItemManagement({products,username,password}:Props
    const wf=await api("/api/v1/content-items/"+item.id+"/workflow-actions",username,password);
    const history=await api("/api/v1/content-items/"+item.id+"/workflow-history",username,password);
    setWorkflowHistory(history||[]);
-   setDefinition(d);setFields(detail.dataSnapshot?.fields||{});setCode(detail.code||"");
+   setDefinition(d);setFields(detail.dataSnapshot?.fields||{});setSeo({...emptySeo(),...(detail.dataSnapshot?.seo||{})});setCode(detail.code||"");
    setWorkflowActions(wf.availableActions||[]);setWorkflowState(wf);setReadOnly(!wf.canEdit);
    setEditingId(item.id);setExpectedVersion(Number(detail.currentVersion||1));setTypeId(item.contentTypeId);setShowEditor(true);
   }catch(e:any){setError(e.message)}finally{setBusy(false)}
@@ -106,7 +107,7 @@ export default function ContentItemManagement({products,username,password}:Props
  const persistContent=async():Promise<string>=>{
   if(!typeId)throw new Error("Vui lòng chọn Content Type");
   if(!code.trim())throw new Error("Content Code là bắt buộc");
-  const payload={code:code.trim(),fields,expectedVersion};
+  const payload={code:code.trim(),fields,seo,expectedVersion};
   if(editingId){await api("/api/v1/content-items/"+editingId,username,password,{method:"PUT",body:JSON.stringify(payload)});setExpectedVersion(expectedVersion+1);return editingId;}
   const created=await api("/api/v1/content-items?productId="+productId+"&contentTypeId="+typeId,username,password,{method:"POST",body:JSON.stringify(payload)});
   const createdId=String(created.id);setEditingId(createdId);setExpectedVersion(Number(created.currentVersion||1));
@@ -201,7 +202,35 @@ export default function ContentItemManagement({products,username,password}:Props
     <div className={readOnly?"workflow-readonly":""}><div className="form-grid"><label className="field"><span>Content Code *</span><input value={code} disabled={!!editingId} placeholder="VD: HOME_LOAN_OVERVIEW" onChange={e=>setCode(e.target.value)}/></label><label className="field"><span>Content Type</span><input readOnly value={definition?.name||""}/></label></div>
     {(definition?.fieldSchema?.groups||[]).map((group:Row)=><section className="authoring-group" key={group.code}><div className="group-title"><Layers size={17}/><h3>{group.name}</h3></div><div className="form-grid">{schemaFields.filter(f=>f.group===group.code&&!repeaterChildCodes.has(f.code)).map(field=><div className="field" key={field.code} style={{gridColumn:["textarea","richtext","markdown","html","code","repeater","image","image_gallery","file","file_gallery","video","audio"].includes(field.type)?"1/-1":undefined}}><span>{field.label}{field.required?" *":""} <small>({field.code} · {field.type})</small></span>{renderField(field,fields[field.code]??blankValue(field),v=>setField(field,v))}</div>)}</div></section>)}
     {schemaFields.filter(f=>!repeaterChildCodes.has(f.code)&&!(definition?.fieldSchema?.groups||[]).some((g:Row)=>g.code===f.group)).map(field=><div className="field" key={field.code}><span>{field.label}{field.required?" *":""}</span>{renderField(field,fields[field.code]??blankValue(field),v=>setField(field,v))}</div>)}
-    </div><div className="editor-footer"><span>Content được lưu theo snapshot version; mỗi lần lưu tạo một version mới.</span><div className="editor-workflow-buttons">{(!editingId||workflowActions.some(a=>a.code==="SAVE"))&&<button className="secondary" disabled={busy||readOnly} onClick={saveDraft}><Save size={15}/> Lưu nháp</button>}{(!editingId||workflowActions.some(a=>a.code==="SUBMIT"))&&<button className="primary" disabled={busy||readOnly} onClick={submitForReview}><Send size={15}/> Gửi duyệt</button>}</div></div>
+    </div>
+     <section className="seo-editor-section">
+      <div className="seo-editor-heading"><div><h3><Globe size={17}/> SEO & URL Settings</h3><p>Metadata được lưu cùng Content Version, hỗ trợ cấu hình riêng cho từng ngôn ngữ.</p></div><span className="seo-version-note">VERSIONED METADATA</span></div>
+      <div className="seo-locale-grid">
+       {["vi-VN","en-US"].map(locale=>{
+        const value=seo[locale]||{};
+        const update=(key:string,next:string)=>setSeo((old:Row)=>({...old,[locale]:{...(old[locale]||{}),[key]:next}}));
+        const titleField=schemaFields.find(f=>f.localized&&/title|name|heading/i.test(f.code+" "+f.label));
+        const sourceTitle=titleField?(fields[titleField.code]?.[locale]||""):"";
+        const currentSlug=value.slug||slug(String(sourceTitle||code||"content"));
+        const productSlug=slug(selectedProduct?.code||selectedProduct?.name||"product");
+        return <div className="seo-locale-card" key={locale}>
+         <div className="seo-locale-title"><b>{locale==="vi-VN"?"Tiếng Việt":"English"}</b><span>{locale}</span></div>
+         <label className="field"><span>SEO Title</span><input maxLength={70} value={value.title||""} onChange={e=>update("title",e.target.value)} placeholder={String(sourceTitle||"Tiêu đề hiển thị trên Google")}/><small>{(value.title||"").length}/70 ký tự</small></label>
+         <label className="field"><span>Meta Description</span><textarea rows={3} maxLength={170} value={value.description||""} onChange={e=>update("description",e.target.value)} placeholder="Mô tả ngắn cho công cụ tìm kiếm"/><small>{(value.description||"").length}/170 ký tự</small></label>
+         <label className="field"><span>Keywords</span><input value={value.keywords||""} onChange={e=>update("keywords",e.target.value)} placeholder="Từ khóa, phân tách bằng dấu phẩy"/></label>
+         <label className="field"><span>URL Slug</span><input value={value.slug||""} onChange={e=>update("slug",slug(e.target.value))} placeholder={currentSlug}/><small>Để trống sẽ tự tạo từ tiêu đề nội dung.</small></label>
+         <div className="seo-url-preview"><small>URL PREVIEW</small><code>/{locale}/{productSlug}/{currentSlug}</code></div>
+         <details className="seo-og-details"><summary>Open Graph / Social Sharing</summary>
+          <label className="field"><span>OG Title</span><input value={value.ogTitle||""} onChange={e=>update("ogTitle",e.target.value)} placeholder="Mặc định dùng SEO Title"/></label>
+          <label className="field"><span>OG Description</span><textarea rows={2} value={value.ogDescription||""} onChange={e=>update("ogDescription",e.target.value)} placeholder="Mặc định dùng Meta Description"/></label>
+          <label className="field"><span>OG Image URL</span><input value={value.ogImage||""} onChange={e=>update("ogImage",e.target.value)} placeholder="Chọn ảnh từ Media Library ở bước tiếp theo"/></label>
+         </details>
+        </div>;
+       })}
+      </div>
+      <div className="seo-publish-warning"><span>Thông tin URL ở đây là bản xem trước. URL public chỉ thay đổi khi Publishing Runtime kích hoạt release; redirect 301 và cache invalidation chưa thuộc increment này.</span></div>
+     </section>
+    <div className="editor-footer"><span>Content và SEO được lưu chung trong snapshot version; mỗi lần lưu tạo một version mới.</span><div className="editor-workflow-buttons">{(!editingId||workflowActions.some(a=>a.code==="SAVE"))&&<button className="secondary" disabled={busy||readOnly} onClick={saveDraft}><Save size={15}/> Lưu nháp</button>}{(!editingId||workflowActions.some(a=>a.code==="SUBMIT"))&&<button className="primary" disabled={busy||readOnly} onClick={submitForReview}><Send size={15}/> Gửi duyệt</button>}</div></div>
    </div>}
   </div>
  </div>;
