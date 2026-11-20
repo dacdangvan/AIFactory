@@ -20,12 +20,12 @@ public class ContentItemService {
         this.mapper = mapper;
     }
 
-    public List<Map<String,Object>> list(UUID productId, UUID contentTypeId, String keyword, int limit) {
+    public List<Map<String,Object>> list(UUID productId, UUID contentTypeId, String keyword, int limit, String actor) {
         if (limit < 1 || limit > 200) throw new IllegalArgumentException("limit must be between 1 and 200");
         StringBuilder sql = new StringBuilder("""
             SELECT i.id, i.product_id AS "productId", i.content_type_id AS "contentTypeId",
                    ct.code AS "contentTypeCode", ct.name AS "contentTypeName",
-                   i.code, i.owner_username AS "ownerUsername", i.current_version AS "currentVersion",
+                   i.code, i.owner_username AS "ownerUsername", i.workflow_version_id AS "workflowVersionId", i.current_version AS "currentVersion",
                    v.data_snapshot::text AS "dataSnapshot", wi.current_state_id AS "currentStateId",
                    ws.state_code AS "workflowState", ws.state_name AS "workflowStateName",
                    i.created_at AS "createdAt", i.updated_at AS "updatedAt"
@@ -47,6 +47,47 @@ public class ContentItemService {
         sql.append(" ORDER BY i.updated_at DESC LIMIT ?");
         args.add(limit);
         return jdbc.queryForList(sql.toString(), args.toArray());
+    }
+
+    public Map<String,Object> getForActor(UUID id,String actor) {
+        requireVisible(id,actor);
+        return get(id);
+    }
+
+    public void requireVisible(UUID id,String actor) {
+        Map<String,Object> context=jdbc.queryForMap("""
+            SELECT i.product_id AS "productId",i.workflow_version_id AS "workflowVersionId",
+                   wi.current_state_id AS "stateId",i.owner_username AS "ownerUsername"
+            FROM cms_content_items i JOIN cms_workflow_instances wi ON wi.content_item_id=i.id
+            WHERE i.id=? AND i.deleted_at IS NULL
+            """,id);
+        if(!canViewItem(context,actor))throw new AccessDeniedException("You are not allowed to view this Content Item");
+    }
+
+    private boolean canViewItem(Map<String,Object> item,String actor) {
+        UUID productId=(UUID)item.get("productId");
+        UUID workflowVersionId=(UUID)item.get("workflowVersionId");
+        UUID stateId=(UUID)(item.containsKey("stateId")?item.get("stateId"):item.get("currentStateId"));
+        String owner=Objects.toString(item.get("ownerUsername"),"");
+        Set<String> roles=userRoles(actor,productId);
+        if(roles.contains("SYSTEM_ADMIN"))return true;
+        List<Map<String,Object>> rules=jdbc.queryForList("""
+            SELECT v.visibility_scope AS "scope",r.rule_definition::text AS "ruleDefinition"
+            FROM cms_workflow_visibility_rules v
+            JOIN cms_workflow_user_rules r ON r.id=v.user_rule_id
+            WHERE v.workflow_version_id=? AND v.state_id=?
+            """,workflowVersionId,stateId);
+        if(rules.isEmpty())return actor!=null&&actor.equals(owner);
+        boolean allowAll=false,deny=false,allowOwned=false;
+        for(Map<String,Object> rule:rules) {
+            Map<String,Object> definition=parseObject(Objects.toString(rule.get("ruleDefinition"),"{}"));
+            if(!matchesWorkflowRule(definition,roles,actor,owner))continue;
+            String scope=Objects.toString(rule.get("scope"),"NONE").toUpperCase(Locale.ROOT);
+            if("ALL".equals(scope))allowAll=true;
+            else if("NONE".equals(scope))deny=true;
+            else if(("OWNED".equals(scope)||"CREATED_BY_ME".equals(scope))&&actor!=null&&actor.equals(owner))allowOwned=true;
+        }
+        return allowAll||(!deny&&allowOwned);
     }
 
     public Map<String,Object> get(UUID id) {
@@ -86,7 +127,7 @@ public class ContentItemService {
         return type;
     }
 
-    public Map<String,Object> getAuthoringDefinitionForItem(UUID itemId) {
+    public Map<String,Object> getAuthoringDefinitionForItem(UUID itemId,String actor) {\n        requireVisible(itemId,actor);
         Map<String,Object> definition = jdbc.queryForMap("""
             SELECT ct.id, ct.product_id AS "productId", ct.code, ct.name,
                    i.template_version_id AS "templateVersionId",
@@ -186,7 +227,7 @@ public class ContentItemService {
     }
 
     public Map<String,Object> workflowActions(UUID id, String actor) {
-        Map<String,Object> context = workflowContext(id);
+        Map<String,Object> context = workflowContext(id);\n        if(!canViewItem(context,actor))throw new AccessDeniedException("You are not allowed to view this Content Item");
         UUID stateId=(UUID)context.get("stateId");
         UUID workflowVersionId=(UUID)context.get("workflowVersionId");
         UUID productId=(UUID)context.get("productId");
