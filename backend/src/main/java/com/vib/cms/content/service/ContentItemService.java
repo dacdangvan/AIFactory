@@ -329,7 +329,7 @@ public class ContentItemService {
             JOIN cms_workflow_actions a ON a.id=t.action_id
             WHERE t.workflow_version_id=? AND t.from_state_id=? AND a.action_code=?
             """,(rs,n)->rs.getObject(1,UUID.class),workflowVersionId,stateId,action);
-        UUID targetStateId=targets.isEmpty()?stateId:targets.getFirst();
+        UUID targetStateId=targets.isEmpty()||targets.getFirst()==null?stateId:targets.getFirst();
         String to=jdbc.queryForObject("SELECT state_code FROM cms_workflow_states WHERE id=?",String.class,targetStateId);
         int changed=jdbc.update("""
             UPDATE cms_workflow_instances SET current_state_id=?,lock_version=lock_version+1,updated_at=now()
