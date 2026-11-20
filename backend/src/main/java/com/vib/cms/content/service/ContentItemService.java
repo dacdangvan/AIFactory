@@ -129,8 +129,8 @@ public class ContentItemService {
         Map<String,Object> current = jdbc.queryForMap("""
             SELECT i.product_id AS "productId", i.content_type_id AS "contentTypeId",
                    i.template_version_id AS "templateVersionId", i.current_version AS "currentVersion",
-                   i.workflow_version_id AS "workflowVersionId", wi.current_state_id AS "stateId",
-                   ws.state_code AS "stateCode"
+                   i.workflow_version_id AS "workflowVersionId", i.template_version_id AS "templateVersionId",
+                   i.owner_username AS "ownerUsername", wi.current_state_id AS "stateId", ws.state_code AS "stateCode"
             FROM cms_content_items i
             JOIN cms_workflow_instances wi ON wi.content_item_id=i.id
             JOIN cms_workflow_states ws ON ws.id=wi.current_state_id
@@ -140,12 +140,13 @@ public class ContentItemService {
         if (!Set.of("DRAFT","REJECTED").contains(state)) {
             throw new IllegalStateException("Content can only be edited in DRAFT or REJECTED state");
         }
-        if (!actor.equals(Objects.toString(current.get("ownerUsername"), actor))) {
-            // Ownership is checked by the authorization layer when it is enabled.
-        }
-        Map<String,Object> definition = getAuthoringDefinition((UUID) current.get("contentTypeId"));
+        // Keep using the exact immutable Template Version captured when this Content Item was created.
+        // A later default-template change on the Content Type must not change an existing item's schema.
+        String schemaJson = jdbc.queryForObject(
+            "SELECT field_schema::text FROM cms_authoring_template_versions WHERE id=?",
+            String.class, current.get("templateVersionId"));
         Map<String,Object> fields = objectMap(body.get("fields"));
-        validateFields(objectMap(definition.get("fieldSchema")), fields);
+        validateFields(parseObject(schemaJson), fields);
         int expected = number(body.get("expectedVersion"), number(current.get("currentVersion"),1));
         int next = expected + 1;
         int changed = jdbc.update("""
