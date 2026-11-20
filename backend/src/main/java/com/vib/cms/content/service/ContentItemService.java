@@ -414,9 +414,9 @@ public class ContentItemService {
         );
         return reviewStates.contains(code)
             || name.contains("đang chờ duyệt") || name.contains("chờ phê duyệt")
-            || name.contains("đang duyệt") || name.contains("pending review")
-            || name.contains("under review") || name.contains("waiting for approval")
-            || name.contains("submitted for review");
+            || name.contains("đang duyệt") || name.contains("gửi duyệt")
+            || name.contains("pending review") || name.contains("under review")
+            || name.contains("waiting for approval") || name.contains("submitted for review");
     }
 
     private Set<String> userRoles(String actor,UUID productId) {
