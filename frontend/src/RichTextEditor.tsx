@@ -31,21 +31,21 @@ export default function RichTextEditor({value,onChange,placeholder="Bắt đầu
  const image=()=>{const url=window.prompt("Nhập URL ảnh");if(url?.trim())editor.chain().focus().setImage({src:url.trim(),alt:""}).run()};
  return <div className="rte-shell">
   <div className="rte-toolbar">
-   {action("Bold",editorState.bold,()=>editor.chain().focus().toggleBold().run(),Bold)}
-   {action("Italic",editorState.italic,()=>editor.chain().focus().toggleItalic().run(),Italic)}
-   {action("Underline",editorState.underline,()=>editor.chain().focus().toggleUnderline().run(),UnderlineIcon)}
-   {action("Strikethrough",editorState.strike,()=>editor.chain().focus().toggleStrike().run(),Strikethrough)}
+   {action("Bold",(editorState?.bold ?? false),()=>editor.chain().focus().toggleBold().run(),Bold)}
+   {action("Italic",(editorState?.italic ?? false),()=>editor.chain().focus().toggleItalic().run(),Italic)}
+   {action("Underline",(editorState?.underline ?? false),()=>editor.chain().focus().toggleUnderline().run(),UnderlineIcon)}
+   {action("Strikethrough",(editorState?.strike ?? false),()=>editor.chain().focus().toggleStrike().run(),Strikethrough)}
    <span className="rte-separator"/>
-   {action("Heading 1",editorState.h1,()=>editor.chain().focus().toggleHeading({level:1}).run(),Heading1)}
-   {action("Heading 2",editorState.h2,()=>editor.chain().focus().toggleHeading({level:2}).run(),Heading2)}
-   {action("Bullet list",editorState.bullet,()=>editor.chain().focus().toggleBulletList().run(),List)}
-   {action("Numbered list",editorState.ordered,()=>editor.chain().focus().toggleOrderedList().run(),ListOrdered)}
-   {action("Quote",editorState.quote,()=>editor.chain().focus().toggleBlockquote().run(),Quote)}
+   {action("Heading 1",(editorState?.h1 ?? false),()=>editor.chain().focus().toggleHeading({level:1}).run(),Heading1)}
+   {action("Heading 2",(editorState?.h2 ?? false),()=>editor.chain().focus().toggleHeading({level:2}).run(),Heading2)}
+   {action("Bullet list",(editorState?.bullet ?? false),()=>editor.chain().focus().toggleBulletList().run(),List)}
+   {action("Numbered list",(editorState?.ordered ?? false),()=>editor.chain().focus().toggleOrderedList().run(),ListOrdered)}
+   {action("Quote",(editorState?.quote ?? false),()=>editor.chain().focus().toggleBlockquote().run(),Quote)}
    <span className="rte-separator"/>
-   {action("Align left",editorState.left,()=>editor.chain().focus().setTextAlign("left").run(),AlignLeft)}
-   {action("Align center",editorState.center,()=>editor.chain().focus().setTextAlign("center").run(),AlignCenter)}
-   {action("Align right",editorState.right,()=>editor.chain().focus().setTextAlign("right").run(),AlignRight)}
-   {action("Insert link",editorState.link,link,Link2)}
+   {action("Align left",(editorState?.left ?? false),()=>editor.chain().focus().setTextAlign("left").run(),AlignLeft)}
+   {action("Align center",(editorState?.center ?? false),()=>editor.chain().focus().setTextAlign("center").run(),AlignCenter)}
+   {action("Align right",(editorState?.right ?? false),()=>editor.chain().focus().setTextAlign("right").run(),AlignRight)}
+   {action("Insert link",(editorState?.link ?? false),link,Link2)}
    {action("Insert image URL",false,image,ImageIcon)}
    {action("Horizontal line",false,()=>editor.chain().focus().setHorizontalRule().run(),Minus)}
    <span className="rte-spacer"/>
