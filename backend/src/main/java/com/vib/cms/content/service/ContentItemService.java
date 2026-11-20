@@ -6,7 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.*;\nimport org.springframework.security.access.AccessDeniedException;
+import java.util.*;
+import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class ContentItemService {
@@ -156,6 +157,7 @@ public class ContentItemService {
             JOIN cms_workflow_states ws ON ws.id=wi.current_state_id
             WHERE i.id=? AND i.deleted_at IS NULL
             """, id);
+        String state=Objects.toString(current.get("stateCode"),"");
         Map<String,Object> actions=workflowActions(id,actor);
         if(!Boolean.TRUE.equals(actions.get("canEdit")))throw new AccessDeniedException("You do not have permission to save this Content Item in state "+state);
         if (!Boolean.TRUE.equals(current.get("isInitial")) && !"REJECTED".equals(state)) {
