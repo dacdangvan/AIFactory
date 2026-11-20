@@ -130,14 +130,14 @@ public class ContentItemService {
             SELECT i.product_id AS "productId", i.content_type_id AS "contentTypeId",
                    i.template_version_id AS "templateVersionId", i.current_version AS "currentVersion",
                    i.workflow_version_id AS "workflowVersionId", i.template_version_id AS "templateVersionId",
-                   i.owner_username AS "ownerUsername", wi.current_state_id AS "stateId", ws.state_code AS "stateCode"
+                   i.owner_username AS "ownerUsername", wi.current_state_id AS "stateId", ws.state_code AS "stateCode", ws.is_initial AS "isInitial"
             FROM cms_content_items i
             JOIN cms_workflow_instances wi ON wi.content_item_id=i.id
             JOIN cms_workflow_states ws ON ws.id=wi.current_state_id
             WHERE i.id=? AND i.deleted_at IS NULL
             """, id);
         String state = Objects.toString(current.get("stateCode"), "");
-        if (!Set.of("DRAFT","REJECTED").contains(state)) {
+        if (!Boolean.TRUE.equals(current.get("isInitial")) && !"REJECTED".equals(state)) {
             throw new IllegalStateException("Content can only be edited in DRAFT or REJECTED state");
         }
         // Keep using the exact immutable Template Version captured when this Content Item was created.
@@ -198,7 +198,21 @@ public class ContentItemService {
             }
             if (blank(value)) continue;
             if ("repeater".equals(type) || "REPEATER".equals(Objects.toString(field.get("cardinality"), ""))) {
-                if (!(value instanceof List<?>)) throw new IllegalArgumentException(code+" must be a list");
+                if (!(value instanceof List<?> rows)) throw new IllegalArgumentException(code+" must be a list");
+                Map<String,Object> options=objectMap(field.get("options"));
+                int min=number(options.get("minItems"),0), max=number(options.get("maxItems"),0);
+                if (rows.size()<min) throw new IllegalArgumentException(code+" requires at least "+min+" items");
+                if (max>0 && rows.size()>max) throw new IllegalArgumentException(code+" allows at most "+max+" items");
+                List<String> childCodes=new ArrayList<>();
+                Object rawChildren=field.get("itemFields");
+                if(rawChildren instanceof List<?> children) for(Object child:children) childCodes.add(String.valueOf(child));
+                for(int index=0;index<rows.size();index++) {
+                    Map<String,Object> row=objectMap(rows.get(index));
+                    for(String childCode:childCodes) {
+                        Object childValue=row.get(childCode);
+                        if(blank(childValue)) throw new IllegalArgumentException(code+" item "+(index+1)+": "+childCode+" is required");
+                    }
+                }
             } else if (Boolean.TRUE.equals(field.get("multiple")) || "MULTIPLE".equals(field.get("cardinality"))) {
                 if (!(value instanceof List<?>)) throw new IllegalArgumentException(code+" must be a list");
             }
