@@ -258,6 +258,30 @@ public class ContentItemService {
             Object pattern = validation.get("pattern");
             if (pattern instanceof String p && !p.isBlank() && !sample.matches(p))
                 throw new IllegalArgumentException(code+" has invalid format");
+            if (Set.of("number","currency","percentage","slider","rating").contains(type)) {
+                try {
+                    java.math.BigDecimal numeric = new java.math.BigDecimal(sample);
+                    if (validation.get("min") != null
+                            && numeric.compareTo(new java.math.BigDecimal(String.valueOf(validation.get("min")))) < 0)
+                        throw new IllegalArgumentException(code+" must be greater than or equal to "+validation.get("min"));
+                    if (validation.get("max") != null
+                            && numeric.compareTo(new java.math.BigDecimal(String.valueOf(validation.get("max")))) > 0)
+                        throw new IllegalArgumentException(code+" must be less than or equal to "+validation.get("max"));
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException(code+" must be a valid number");
+                }
+            }
+            Object allowedRaw=objectMap(field.get("options")).get("values");
+            if (allowedRaw instanceof List<?> allowed && !allowed.isEmpty()) {
+                if (value instanceof List<?> selected) {
+                    for (Object option:selected) if (!allowed.contains(option))
+                        throw new IllegalArgumentException(code+" contains an unsupported option");
+                } else if (Set.of("select","radio").contains(type) && !allowed.contains(value)) {
+                    throw new IllegalArgumentException(code+" contains an unsupported option");
+                }
+            }
+            if ("email".equals(type) && !sample.matches("^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$"))
+                throw new IllegalArgumentException(code+" must be a valid email address");
         }
     }
 
