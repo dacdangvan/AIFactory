@@ -14,14 +14,14 @@ import java.util.*;
 public class MediaService {
     private static final long MAX_FILE_SIZE = 20L * 1024 * 1024;
     private static final Set<String> ALLOWED_TYPES = Set.of(
-        "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+        "image/jpeg", "image/png", "image/gif", "image/webp",
         "application/pdf", "text/plain", "text/csv",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",\n        "video/mp4", "video/webm", "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg"
     );
     private final JdbcTemplate jdbc;
     private final AssetStorageProvider storage;
