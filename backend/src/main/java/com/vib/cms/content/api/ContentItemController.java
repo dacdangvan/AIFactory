@@ -53,9 +53,20 @@ public class ContentItemController {
         return ApiResponse.ok(service.update(id,body,actor(authentication)));
     }
 
+    @GetMapping("/{id}/workflow-actions")
+    public ApiResponse<Map<String,Object>> workflowActions(@PathVariable UUID id,Authentication authentication) {
+        return ApiResponse.ok(service.workflowActions(id,actor(authentication)));
+    }
+
+    @PostMapping("/{id}/workflow-actions")
+    public ApiResponse<Map<String,Object>> executeWorkflowAction(@PathVariable UUID id,
+            @RequestBody Map<String,Object> body,Authentication authentication) {
+        return ApiResponse.ok(service.executeWorkflowAction(id,body,actor(authentication)));
+    }
+
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> archive(@PathVariable UUID id) {
-        service.archive(id);
+    public ApiResponse<Void> archive(@PathVariable UUID id,Authentication authentication) {
+        service.archive(id,actor(authentication));
         return ApiResponse.ok(null);
     }
 
