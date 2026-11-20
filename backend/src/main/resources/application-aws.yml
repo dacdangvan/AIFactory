@@ -1,0 +1,12 @@
+# AWS/EKS profile. Credentials are supplied by the AWS default credential chain (Pod Identity/IRSA).
+cms:
+  asset-storage:
+    provider: s3
+    local:
+      root-directory: ./storage/assets
+      public-url-prefix: /api/v1/media
+    s3:
+      bucket: ${CMS_ASSET_S3_BUCKET}
+      region: ${AWS_REGION:ap-southeast-1}
+      prefix: ${CMS_ASSET_S3_PREFIX:cms/assets}
+      public-url-prefix: ${CMS_ASSET_CDN_URL:}
