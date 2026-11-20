@@ -20,8 +20,8 @@ public class ContentItemController {
     public ApiResponse<List<Map<String,Object>>> list(@RequestParam UUID productId,
             @RequestParam(required=false) UUID contentTypeId,
             @RequestParam(required=false) String keyword,
-            @RequestParam(defaultValue="100") int limit) {
-        return ApiResponse.ok(service.list(productId,contentTypeId,keyword,limit));
+            @RequestParam(defaultValue="100") int limit,Authentication authentication) {
+        return ApiResponse.ok(service.list(productId,contentTypeId,keyword,limit,actor(authentication)));
     }
 
     @GetMapping("/authoring-definition")
@@ -35,8 +35,8 @@ public class ContentItemController {
     }
 
     @GetMapping("/{id}/authoring-definition")
-    public ApiResponse<Map<String,Object>> definitionForItem(@PathVariable UUID id) {
-        return ApiResponse.ok(service.getAuthoringDefinitionForItem(id));
+    public ApiResponse<Map<String,Object>> definitionForItem(@PathVariable UUID id,Authentication authentication) {
+        return ApiResponse.ok(service.getAuthoringDefinitionForItem(id,actor(authentication)));
     }
 
     @PostMapping
