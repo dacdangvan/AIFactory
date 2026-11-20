@@ -85,6 +85,22 @@ public class ContentItemService {
         return type;
     }
 
+    public Map<String,Object> getAuthoringDefinitionForItem(UUID itemId) {
+        Map<String,Object> definition = jdbc.queryForMap("""
+            SELECT ct.id, ct.product_id AS "productId", ct.code, ct.name,
+                   i.template_version_id AS "templateVersionId",
+                   tv.field_schema::text AS "fieldSchema",
+                   t.name AS "templateName", tv.version_no AS "templateVersion"
+            FROM cms_content_items i
+            JOIN cms_content_types ct ON ct.id=i.content_type_id
+            JOIN cms_authoring_template_versions tv ON tv.id=i.template_version_id
+            JOIN cms_authoring_templates t ON t.id=tv.template_id
+            WHERE i.id=? AND i.deleted_at IS NULL
+            """, itemId);
+        definition.put("fieldSchema", parseObject(Objects.toString(definition.get("fieldSchema"), "{}")));
+        return definition;
+    }
+
     @Transactional
     public Map<String,Object> create(UUID productId, UUID contentTypeId, Map<String,Object> body, String actor) {
         String code = required(body, "code");
