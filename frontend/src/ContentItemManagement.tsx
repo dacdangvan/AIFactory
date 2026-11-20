@@ -49,7 +49,7 @@ export default function ContentItemManagement({products,username,password}:Props
  const schemaFields=useMemo(()=>((definition?.fieldSchema?.fields||[]) as FieldDef[]),[definition]);
  const repeaterChildCodes=useMemo(()=>new Set(schemaFields.flatMap(f=>f.type==="repeater"||f.cardinality==="REPEATER"?(f.itemFields||[]):[])),[schemaFields]);
  const seoSourceFields=useMemo(()=>{
-  const normalize=(value:string)=>value.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/đ/gi,"d").toLowerCase().replace(/[^a-z0-9]/g,"");
+  const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/gi,"d").toLowerCase().replace(/[^a-z0-9]/g,"");
   const findField=(kind:"title"|"description")=>{
    const candidates=schemaFields.filter(f=>f.type!=="repeater"&&f.cardinality!=="REPEATER");
    const tokens=kind==="title"
@@ -71,7 +71,7 @@ export default function ContentItemManagement({products,username,password}:Props
     ? (raw[locale]??raw["vi-VN"]??raw["en-US"]??"")
     : raw??"";
    return String(value).replace(/<[^>]*>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&")
-    .replace(/\\s+/g," ").trim();
+    .replace(/\s+/g," ").trim();
   };
   setSeo(old=>{
    const next={...old};
