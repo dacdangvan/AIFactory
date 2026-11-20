@@ -51,6 +51,6 @@ export default function RichTextEditor({value,onChange,placeholder="Bắt đầu
    {action("Redo",false,()=>editor.chain().focus().redo().run(),Redo2)}
   </div>
   <EditorContent editor={editor} className="rte-content"/>
-  <div className="rte-foot"><span>Định dạng nội dung bằng thanh công cụ</span><span>{editor.storage.characterCount?.characters?.()??""}</span></div>
+  <div className="rte-foot"><span>Định dạng nội dung bằng thanh công cụ</span><span>Rich text · HTML</span></div>
  </div>;
 }
