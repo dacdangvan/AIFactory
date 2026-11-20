@@ -31,3 +31,15 @@ cms:
   security:
     # Local development only. Never activate this profile in production.
     local-permit-all: true
+
+# Local developer asset storage. Files are ignored by Git and kept outside the database.
+cms:
+  asset-storage:
+    provider: local
+    local:
+      root-directory: ./storage/assets
+      public-url-prefix: /api/v1/media
+    s3:
+      bucket: ""
+      region: ap-southeast-1
+      prefix: cms/assets
