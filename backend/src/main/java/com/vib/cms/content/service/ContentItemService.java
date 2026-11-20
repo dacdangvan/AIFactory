@@ -322,7 +322,18 @@ public class ContentItemService {
     private boolean matchesWorkflowRule(Map<String,Object> rule,Set<String> roles,String actor,String owner) {
         Object rawRoles=rule.get("roles");
         if(!(rawRoles instanceof List<?> requiredRoles)||requiredRoles.isEmpty())return false;
-        boolean roleMatch=roles.contains("SYSTEM_ADMIN")||requiredRoles.stream().anyMatch(r->roles.contains(String.valueOf(r)));
+        boolean roleMatch=roles.contains("SYSTEM_ADMIN")||requiredRoles.stream().anyMatch(raw->{
+            String required=String.valueOf(raw).toUpperCase(Locale.ROOT);
+            if(roles.contains(required))return true;
+            // Default VIB role aliases: BU acts as Editor; PO_ADMIN as Manager;
+            // DEV_ADMIN/PO_ADMIN can act as Publisher when assigned to the Product.
+            return switch(required){
+                case "EDITOR" -> roles.contains("BU");
+                case "MANAGER" -> roles.contains("PO_ADMIN");
+                case "PUBLISHER" -> roles.contains("DEV_ADMIN")||roles.contains("PO_ADMIN");
+                default -> false;
+            };
+        });
         if(!roleMatch)return false;
         String scope=Objects.toString(rule.get("scope"),"PRODUCT").toUpperCase(Locale.ROOT);
         if(Set.of("OWNER","OWNED","CREATED_BY_ME").contains(scope))return actor!=null&&actor.equals(owner);
