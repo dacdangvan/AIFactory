@@ -13,7 +13,7 @@ spring:
     locations: classpath:db/migration
     # The local database was initialized from database/01_postgresql_ddl.sql
     # before Flyway was wired into Spring Boot 4. Baseline it as version 1,
-    # then apply V2 RBAC seed and V3 Content Management migrations.
+    # then apply all incremental migrations from V2 onward.
     baseline-on-migrate: true
     baseline-version: 1
 
