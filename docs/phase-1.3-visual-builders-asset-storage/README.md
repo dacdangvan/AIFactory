@@ -91,3 +91,15 @@ npm run dev
 ```
 
 No local Maven or npm build has been executed by the authoring assistant. Run these commands in the developer environment and report any compiler/test errors before proceeding to Content Item runtime.
+
+## Configuration list and lifecycle UI (follow-up)
+
+The Content Types, Authoring Templates and Workflows tabs now open on management lists rather than opening the builder immediately.
+
+- Content Types: create/edit metadata, select an Authoring Template version, select an optional Content Type Workflow override (or inherit Product default), activate/deactivate, archive.
+- Authoring Templates: list, create, edit metadata, activate/deactivate, archive. Template schema versions remain immutable.
+- Workflows: list, create, edit metadata, activate/deactivate, archive. Workflow definition versions remain immutable.
+- Backend lifecycle endpoints use ACTIVE / INACTIVE / ARCHIVED. Delete is a soft archive and does not physically delete referenced configuration.
+- Content Type list includes its current Template Version and Workflow Override identifiers for display.
+
+Important remaining limitation: editing an existing Template's field schema as a new version and editing an existing Workflow's states/actions/transitions as a new version are not implemented in this follow-up. Existing template/workflow metadata can be edited; their versioned definitions are not overwritten. Product default Workflow binding is still managed from the Workflow screen. Content Type form supports a per-type override or inheritance of Product default.
