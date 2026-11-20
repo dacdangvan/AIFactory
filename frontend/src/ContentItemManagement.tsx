@@ -87,6 +87,8 @@ export default function ContentItemManagement({products,username,password}:Props
    const d=await api("/api/v1/content-items/"+item.id+"/authoring-definition",username,password);
    const detail=await api("/api/v1/content-items/"+item.id,username,password);
    const wf=await api("/api/v1/content-items/"+item.id+"/workflow-actions",username,password);
+   const history=await api("/api/v1/content-items/"+item.id+"/workflow-history",username,password);
+   setWorkflowHistory(history||[]);
    setDefinition(d);setFields(detail.dataSnapshot?.fields||{});setCode(detail.code||"");
    setWorkflowActions(wf.availableActions||[]);setWorkflowState(wf);setReadOnly(!wf.canEdit);
    setEditingId(item.id);setExpectedVersion(Number(detail.currentVersion||1));setTypeId(item.contentTypeId);setShowEditor(true);
