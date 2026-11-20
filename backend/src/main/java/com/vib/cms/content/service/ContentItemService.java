@@ -273,7 +273,8 @@ public class ContentItemService {
                 x.put("code",code);x.put("name",row.get("actionName"));
                 x.put("allowed",false);x.put("denied",false);
                 x.put("toStateCode",row.get("toStateCode"));x.put("toStateName",row.get("toStateName"));
-                x.put("changesState",row.get("toStateId")!=null);\n                x.put("actionChangesState",row.get("actionChangesState"));
+                x.put("changesState",row.get("toStateId")!=null);
+                x.put("actionChangesState",row.get("actionChangesState"));
                 return x;
             });
             Map<String,Object> rule=parseObject(Objects.toString(row.get("ruleDefinition"),"{}"));
