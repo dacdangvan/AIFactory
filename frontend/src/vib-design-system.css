@@ -577,3 +577,20 @@ td .vib-select-root{min-width:130px}
 .seo-publish-warning{margin-top:14px;padding:11px 13px;border:1px solid #f0e5cb;border-radius:9px;background:#fffaf0;color:#8b744c;font-size:10px;line-height:1.55}
 .seo-editor-fieldset:disabled input,.seo-editor-fieldset:disabled textarea{cursor:not-allowed}
 @media(max-width:760px){.seo-locale-grid{grid-template-columns:minmax(0,1fr)}.seo-editor-section{padding:14px}.seo-editor-heading{flex-direction:column}}
+
+
+/* Compact Open Graph image preview */
+.seo-og-image-preview{
+ display:block!important;
+ width:112px!important;
+ height:72px!important;
+ max-width:112px!important;
+ max-height:72px!important;
+ margin-top:8px!important;
+ border:1px solid #e2eaf0!important;
+ border-radius:8px!important;
+ background:#f5f8fa!important;
+ object-fit:cover!important;
+}
+.seo-og-image-source,.seo-og-image-editor{min-width:0}
+.seo-og-image-source>small,.seo-og-image-editor>small{display:block;margin-top:6px;color:#8194a4;font-size:10px}
