@@ -20,6 +20,7 @@ const blankValue=(field:FieldDef):any=>{
  return field.options?.defaultValue??"";
 };
 const slug=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const emptySeo=()=>Object.fromEntries(["vi-VN","en-US"].map(locale=>[locale,{title:"",description:"",keywords:"",slug:"",ogTitle:"",ogDescription:"",ogImage:""}]));
 
 const WorkflowIcon=({code}:{code:string})=>{switch(code){case "SUBMIT":case "RESUBMIT":return <Send size={14}/>;case "RECALL":case "UNPUBLISH":return <Undo2 size={14}/>;case "APPROVE":return <CheckCircle2 size={14}/>;case "REJECT":return <XCircle size={14}/>;case "PUBLISH":return <Globe size={14}/>;case "DELETE":return <Trash2 size={14}/>;case "SAVE":return <Save size={14}/>;default:return <Workflow size={14}/>;}};
 
@@ -203,7 +204,7 @@ export default function ContentItemManagement({products,username,password}:Props
     {(definition?.fieldSchema?.groups||[]).map((group:Row)=><section className="authoring-group" key={group.code}><div className="group-title"><Layers size={17}/><h3>{group.name}</h3></div><div className="form-grid">{schemaFields.filter(f=>f.group===group.code&&!repeaterChildCodes.has(f.code)).map(field=><div className="field" key={field.code} style={{gridColumn:["textarea","richtext","markdown","html","code","repeater","image","image_gallery","file","file_gallery","video","audio"].includes(field.type)?"1/-1":undefined}}><span>{field.label}{field.required?" *":""} <small>({field.code} · {field.type})</small></span>{renderField(field,fields[field.code]??blankValue(field),v=>setField(field,v))}</div>)}</div></section>)}
     {schemaFields.filter(f=>!repeaterChildCodes.has(f.code)&&!(definition?.fieldSchema?.groups||[]).some((g:Row)=>g.code===f.group)).map(field=><div className="field" key={field.code}><span>{field.label}{field.required?" *":""}</span>{renderField(field,fields[field.code]??blankValue(field),v=>setField(field,v))}</div>)}
     </div>
-     <section className="seo-editor-section">
+     <fieldset disabled={readOnly} className="seo-editor-fieldset"><section className="seo-editor-section">
       <div className="seo-editor-heading"><div><h3><Globe size={17}/> SEO & URL Settings</h3><p>Metadata được lưu cùng Content Version, hỗ trợ cấu hình riêng cho từng ngôn ngữ.</p></div><span className="seo-version-note">VERSIONED METADATA</span></div>
       <div className="seo-locale-grid">
        {["vi-VN","en-US"].map(locale=>{
@@ -229,7 +230,7 @@ export default function ContentItemManagement({products,username,password}:Props
        })}
       </div>
       <div className="seo-publish-warning"><span>Thông tin URL ở đây là bản xem trước. URL public chỉ thay đổi khi Publishing Runtime kích hoạt release; redirect 301 và cache invalidation chưa thuộc increment này.</span></div>
-     </section>
+     </section></fieldset>
     <div className="editor-footer"><span>Content và SEO được lưu chung trong snapshot version; mỗi lần lưu tạo một version mới.</span><div className="editor-workflow-buttons">{(!editingId||workflowActions.some(a=>a.code==="SAVE"))&&<button className="secondary" disabled={busy||readOnly} onClick={saveDraft}><Save size={15}/> Lưu nháp</button>}{(!editingId||workflowActions.some(a=>a.code==="SUBMIT"))&&<button className="primary" disabled={busy||readOnly} onClick={submitForReview}><Send size={15}/> Gửi duyệt</button>}</div></div>
    </div>}
   </div>
