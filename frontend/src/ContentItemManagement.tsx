@@ -20,7 +20,7 @@ const blankValue=(field:FieldDef):any=>{
 };
 const slug=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 
-const WorkflowIcon=({code}:{code:string})=>{switch(code){case "SUBMIT":case "RESUBMIT":return <Send size={14}/>;case "RECALL":return <Undo2 size={14}/>;case "APPROVE":return <CheckCircle2 size={14}/>;case "REJECT":return <XCircle size={14}/>;case "PUBLISH":return <Globe size={14}/>;case "DELETE":return <Trash2 size={14}/>;case "SAVE":return <Save size={14}/>;default:return <Workflow size={14}/>;}};
+const WorkflowIcon=({code}:{code:string})=>{switch(code){case "SUBMIT":case "RESUBMIT":return <Send size={14}/>;case "RECALL":case "UNPUBLISH":return <Undo2 size={14}/>;case "APPROVE":return <CheckCircle2 size={14}/>;case "REJECT":return <XCircle size={14}/>;case "PUBLISH":return <Globe size={14}/>;case "DELETE":return <Trash2 size={14}/>;case "SAVE":return <Save size={14}/>;default:return <Workflow size={14}/>;}};
 
 export default function ContentItemManagement({products,username,password}:Props){
  const [productId,setProductId]=useState("");
@@ -148,6 +148,7 @@ export default function ContentItemManagement({products,username,password}:Props
    if(action.code==="REJECT"){comment=window.prompt("Nhập lý do từ chối (bắt buộc)")||"";if(!comment.trim())throw new Error("Vui lòng nhập lý do từ chối");}
    if(action.code==="DELETE"&&!window.confirm("Xóa Content Item "+item.code+"?"))throw new Error("Đã hủy thao tác xóa");
    if(action.code==="APPROVE"&&!window.confirm("Xác nhận phê duyệt Content Item "+item.code+"?"))throw new Error("Đã hủy thao tác phê duyệt");
+   if(action.code==="UNPUBLISH"&&!window.confirm("Gỡ trạng thái Published của Content Item "+item.code+" và chuyển về Approved?"))throw new Error("Đã hủy thao tác gỡ Published");
    await performItemAction(item.id,action.code,comment);
    setNotice(action.code==="DELETE"?"Đã xóa Content Item":action.code==="REJECT"?"Đã từ chối nội dung":action.code==="APPROVE"?"Đã phê duyệt nội dung":"Đã thực hiện "+(action.name||action.code));
    await loadItems();
