@@ -354,7 +354,6 @@ public class ContentItemService {
     }
 
     @Transactional
-    @Transactional
     public void archive(UUID id,String actor) {
         executeWorkflowAction(id,Map.of("action","DELETE","comment","Deleted by content owner"),actor);
     }
