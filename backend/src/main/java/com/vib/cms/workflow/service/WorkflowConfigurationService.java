@@ -25,6 +25,18 @@ public class WorkflowConfigurationService {
     }
 
     @Transactional
+    public Map<String,Object> updateMetadata(UUID id,Map<String,Object> body,String actor) {
+        jdbc.update("UPDATE cms_workflow_definitions SET code=?,name=?,description=?,updated_at=now(),updated_by=? WHERE id=?",
+            required(body,"code"),required(body,"name"),body.get("description"),actor,id);
+        return jdbc.queryForMap("SELECT id,product_id AS \"productId\",code,name,description,status FROM cms_workflow_definitions WHERE id=?",id);
+    }
+    public Map<String,Object> setStatus(UUID id,String status) {
+        if(!List.of("ACTIVE","INACTIVE","ARCHIVED").contains(status)) throw new IllegalArgumentException("Invalid status");
+        jdbc.update("UPDATE cms_workflow_definitions SET status=?,updated_at=now() WHERE id=?",status,id);
+        return Map.of("id",id,"status",status);
+    }
+
+    @Transactional
     @SuppressWarnings("unchecked")
     public Map<String,Object> create(Map<String,Object> d,String actor) {
         UUID workflowId=UUID.randomUUID(), versionId=UUID.randomUUID();
