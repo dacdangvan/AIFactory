@@ -30,7 +30,7 @@ public class S3AssetStorageProvider implements AssetStorageProvider {
         String key=key(objectKey);
         PutObjectRequest request=PutObjectRequest.builder().bucket(properties.getS3().getBucket()).key(key)
             .contentType(contentType).serverSideEncryption(ServerSideEncryption.AES256).build();
-        client.putObject(request,RequestBody.fromInputStream(input,contentLength)); return key;
+        client.putObject(request,RequestBody.fromInputStream(input,contentLength)); return objectKey;
     }
     @Override public InputStream download(String objectKey) {
         ResponseInputStream<GetObjectResponse> stream=client.getObject(GetObjectRequest.builder()
@@ -42,7 +42,7 @@ public class S3AssetStorageProvider implements AssetStorageProvider {
     }
     @Override public boolean exists(String objectKey) {
         try { client.headObject(HeadObjectRequest.builder().bucket(properties.getS3().getBucket()).key(key(objectKey)).build()); return true; }
-        catch (NoSuchKeyException ex) { return false; }
+        catch (S3Exception ex) { if (ex.statusCode()==404) return false; throw ex; }
     }
     @Override public String providerCode(){ return "S3"; }
 }
