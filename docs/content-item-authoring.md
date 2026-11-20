@@ -15,6 +15,7 @@
 - `GET /api/v1/content-items?productId={uuid}&contentTypeId={uuid}&keyword={text}&limit=100`
 - `GET /api/v1/content-items/authoring-definition?contentTypeId={uuid}`
 - `GET /api/v1/content-items/{id}`
+- `GET /api/v1/content-items/{id}/authoring-definition` (returns the exact Template Version pinned to the item)
 - `POST /api/v1/content-items?productId={uuid}&contentTypeId={uuid}`
 - `PUT /api/v1/content-items/{id}`
 - `DELETE /api/v1/content-items/{id}` (soft archive)
