@@ -32,8 +32,6 @@ cms:
     # Local development only. Never activate this profile in production.
     local-permit-all: true
 
-# Local developer asset storage. Files are ignored by Git and kept outside the database.
-cms:
   asset-storage:
     provider: local
     local:
