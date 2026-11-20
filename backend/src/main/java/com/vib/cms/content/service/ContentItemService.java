@@ -205,9 +205,8 @@ public class ContentItemService {
         String state=Objects.toString(current.get("stateCode"),"");
         Map<String,Object> actions=workflowActions(id,actor);
         if(!Boolean.TRUE.equals(actions.get("canEdit")))throw new AccessDeniedException("You do not have permission to save this Content Item in state "+state);
-        if (!Boolean.TRUE.equals(current.get("isInitial")) && !"REJECTED".equals(state)) {
-            throw new IllegalStateException("Content can only be edited in its initial workflow state or REJECTED state");
-        }
+        // Editing is allowed in every state except the review queue. Authorization is
+        // resolved centrally by workflowActions(), not by a hard-coded state whitelist.
         // Keep using the exact immutable Template Version captured when this Content Item was created.
         // A later default-template change on the Content Type must not change an existing item's schema.
         String schemaJson = jdbc.queryForObject(
@@ -312,10 +311,26 @@ public class ContentItemService {
             unpublish.put("changesState",true);unpublish.put("toStateCode","APPROVED");
             available.add(unpublish);
         }
+        // Content may be edited in any workflow state except while it is waiting for review.
+        // BU editors can edit their own items; PO_ADMIN/DEV_ADMIN/SYSTEM_ADMIN can edit
+        // product content. Explicit workflow DENY for SAVE always takes precedence.
+        boolean reviewPending=isReviewPending(stateCode,Objects.toString(context.get("stateName"),""));
+        boolean explicitSaveDenied=decisions.containsKey("SAVE")
+            && Boolean.TRUE.equals(decisions.get("SAVE").get("denied"));
+        boolean editorRole=userRoles.contains("SYSTEM_ADMIN") || userRoles.contains("DEV_ADMIN")
+            || userRoles.contains("PO_ADMIN") || (userRoles.contains("BU") && actor!=null && actor.equals(owner));
+        if(!reviewPending && editorRole && !explicitSaveDenied
+            && available.stream().noneMatch(a->"SAVE".equals(a.get("code")))) {
+            Map<String,Object> save=new LinkedHashMap<>();
+            save.put("code","SAVE");save.put("name","Save changes");save.put("allowed",true);
+            save.put("changesState",false);save.put("toStateCode",stateCode);
+            available.add(save);
+        }
+
         Map<String,Object> result=new LinkedHashMap<>();
         result.put("stateCode",stateCode);result.put("stateName",context.get("stateName"));
         result.put("lockVersion",context.get("lockVersion"));result.put("availableActions",available);
-        result.put("canEdit",available.stream().anyMatch(a->"SAVE".equals(a.get("code"))));
+        result.put("canEdit",!reviewPending && available.stream().anyMatch(a->"SAVE".equals(a.get("code"))));
         return result;
     }
 
@@ -387,6 +402,21 @@ public class ContentItemService {
             JOIN cms_workflow_states ws ON ws.id=wi.current_state_id
             WHERE i.id=? AND i.deleted_at IS NULL
             """,id);
+    }
+
+    private boolean isReviewPending(String stateCode,String stateName) {
+        String code=Objects.toString(stateCode,"").toUpperCase(Locale.ROOT).replace('-','_').replace(' ','_');
+        String name=Objects.toString(stateName,"").toLowerCase(Locale.ROOT);
+        Set<String> reviewStates=Set.of(
+            "SUBMITTED","SUBMIT","SUBMITTED_FOR_REVIEW","SENT_FOR_REVIEW",
+            "PENDING_REVIEW","IN_REVIEW","UNDER_REVIEW","WAITING_FOR_REVIEW",
+            "WAITING_FOR_APPROVAL","PENDING_APPROVAL","SUBMITTED_FOR_APPROVAL"
+        );
+        return reviewStates.contains(code)
+            || name.contains("đang chờ duyệt") || name.contains("chờ phê duyệt")
+            || name.contains("đang duyệt") || name.contains("pending review")
+            || name.contains("under review") || name.contains("waiting for approval")
+            || name.contains("submitted for review");
     }
 
     private Set<String> userRoles(String actor,UUID productId) {
