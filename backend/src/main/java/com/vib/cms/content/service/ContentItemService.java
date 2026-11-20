@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.*;
+import java.util.*;\nimport org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class ContentItemService {
@@ -137,6 +137,10 @@ public class ContentItemService {
             INSERT INTO cms_workflow_history(workflow_instance_id,action_code,from_state_code,to_state_code,actor_username,comment)
             VALUES (?,'CREATE',NULL,?,?,?)
             """, workflowInstanceId, initialStateCode, actor, "Created in initial workflow state");
+        Map<String,Object> allowed=workflowActions(id,actor);
+        List<?> available=(List<?>)allowed.get("availableActions");
+        if(available==null||available.stream().noneMatch(a->a instanceof Map<?,?> m && Set.of("SAVE","SUBMIT").contains(Objects.toString(m.get("code"),""))))
+            throw new AccessDeniedException("You do not have permission to create content in this workflow");
         return get(id);
     }
 
@@ -152,7 +156,8 @@ public class ContentItemService {
             JOIN cms_workflow_states ws ON ws.id=wi.current_state_id
             WHERE i.id=? AND i.deleted_at IS NULL
             """, id);
-        String state = Objects.toString(current.get("stateCode"), "");
+        Map<String,Object> actions=workflowActions(id,actor);
+        if(!Boolean.TRUE.equals(actions.get("canEdit")))throw new AccessDeniedException("You do not have permission to save this Content Item in state "+state);
         if (!Boolean.TRUE.equals(current.get("isInitial")) && !"REJECTED".equals(state)) {
             throw new IllegalStateException("Content can only be edited in its initial workflow state or REJECTED state");
         }
@@ -178,9 +183,150 @@ public class ContentItemService {
         return get(id);
     }
 
+    public Map<String,Object> workflowActions(UUID id, String actor) {
+        Map<String,Object> context = workflowContext(id);
+        UUID stateId=(UUID)context.get("stateId");
+        UUID workflowVersionId=(UUID)context.get("workflowVersionId");
+        UUID productId=(UUID)context.get("productId");
+        String stateCode=Objects.toString(context.get("stateCode"),"");
+        String owner=Objects.toString(context.get("ownerUsername"),"");
+        Set<String> userRoles=userRoles(actor,productId);
+        List<Map<String,Object>> rows=jdbc.queryForList("""
+            SELECT a.action_code AS "actionCode",a.action_name AS "actionName",
+                   p.effect,r.rule_definition::text AS "ruleDefinition",
+                   t.to_state_id AS "toStateId",target.state_code AS "toStateCode",
+                   target.state_name AS "toStateName"
+            FROM cms_workflow_action_permissions p
+            JOIN cms_workflow_actions a ON a.id=p.action_id
+            JOIN cms_workflow_user_rules r ON r.id=p.user_rule_id
+            LEFT JOIN cms_workflow_transitions t
+              ON t.workflow_version_id=p.workflow_version_id
+             AND t.action_id=a.id AND t.from_state_id=p.state_id
+            LEFT JOIN cms_workflow_states target ON target.id=t.to_state_id
+            WHERE p.workflow_version_id=? AND p.state_id=?
+            ORDER BY a.action_name
+            """,workflowVersionId,stateId);
+        Map<String,Map<String,Object>> decisions=new LinkedHashMap<>();
+        for(Map<String,Object> row:rows) {
+            String code=Objects.toString(row.get("actionCode"),"");
+            Map<String,Object> decision=decisions.computeIfAbsent(code,k->{
+                Map<String,Object> x=new LinkedHashMap<>();
+                x.put("code",code);x.put("name",row.get("actionName"));
+                x.put("allowed",false);x.put("denied",false);
+                x.put("toStateCode",row.get("toStateCode"));x.put("toStateName",row.get("toStateName"));
+                x.put("changesState",row.get("toStateId")!=null);
+                return x;
+            });
+            Map<String,Object> rule=parseObject(Objects.toString(row.get("ruleDefinition"),"{}"));
+            if(matchesWorkflowRule(rule,userRoles,actor,owner)) {
+                if("DENY".equalsIgnoreCase(Objects.toString(row.get("effect"),"ALLOW")))decision.put("denied",true);
+                else decision.put("allowed",true);
+            }
+        }
+        List<Map<String,Object>> available=new ArrayList<>();
+        for(Map<String,Object> decision:decisions.values()) {
+            boolean allowed=Boolean.TRUE.equals(decision.get("allowed"))&&!Boolean.TRUE.equals(decision.get("denied"));
+            String code=Objects.toString(decision.get("code"),"");
+            boolean hasTransition=Boolean.TRUE.equals(decision.get("changesState"));
+            if(allowed && (hasTransition || "SAVE".equals(code))) available.add(decision);
+        }
+        boolean ownerCanDelete=actor!=null && actor.equals(owner)
+            && (Boolean.TRUE.equals(context.get("isInitial")) || "REJECTED".equals(stateCode));
+        if(ownerCanDelete && available.stream().noneMatch(a->"DELETE".equals(a.get("code")))) {
+            Map<String,Object> delete=new LinkedHashMap<>();
+            delete.put("code","DELETE");delete.put("name","Delete");delete.put("allowed",true);
+            delete.put("changesState",false);delete.put("toStateCode",stateCode);available.add(delete);
+        }
+        Map<String,Object> result=new LinkedHashMap<>();
+        result.put("stateCode",stateCode);result.put("stateName",context.get("stateName"));
+        result.put("lockVersion",context.get("lockVersion"));result.put("availableActions",available);
+        result.put("canEdit",available.stream().anyMatch(a->"SAVE".equals(a.get("code"))));
+        return result;
+    }
+
     @Transactional
-    public void archive(UUID id) {
-        jdbc.update("UPDATE cms_content_items SET deleted_at=now(),updated_at=now() WHERE id=? AND deleted_at IS NULL", id);
+    public Map<String,Object> executeWorkflowAction(UUID id,Map<String,Object> body,String actor) {
+        String action=required(body,"action").toUpperCase(Locale.ROOT);
+        Map<String,Object> context=workflowContext(id);
+        Map<String,Object> availability=workflowActions(id,actor);
+        List<?> actions=(List<?>)availability.get("availableActions");
+        Map<String,Object> selected=null;
+        if(actions!=null)for(Object raw:actions)if(raw instanceof Map<?,?> m && action.equals(Objects.toString(m.get("code"),""))){
+            selected=objectMap(m);break;
+        }
+        if(selected==null)throw new AccessDeniedException("You are not allowed to perform workflow action "+action+" in state "+context.get("stateCode"));
+        long lockVersion=number(body.get("expectedLockVersion"),number(context.get("lockVersion"),0));
+        long currentLock=number(context.get("lockVersion"),0);
+        if(lockVersion!=currentLock)throw new IllegalStateException("Workflow state was changed by another user. Reload before continuing.");
+        String from=Objects.toString(context.get("stateCode"),"");
+        UUID workflowInstanceId=(UUID)context.get("workflowInstanceId");
+        UUID workflowVersionId=(UUID)context.get("workflowVersionId");
+        UUID stateId=(UUID)context.get("stateId");
+        List<UUID> targets=jdbc.query("""
+            SELECT t.to_state_id
+            FROM cms_workflow_transitions t
+            JOIN cms_workflow_actions a ON a.id=t.action_id
+            WHERE t.workflow_version_id=? AND t.from_state_id=? AND a.action_code=?
+            """,(rs,n)->rs.getObject(1,UUID.class),workflowVersionId,stateId,action);
+        UUID targetStateId=targets.isEmpty()?stateId:targets.getFirst();
+        String to=jdbc.queryForObject("SELECT state_code FROM cms_workflow_states WHERE id=?",String.class,targetStateId);
+        int changed=jdbc.update("""
+            UPDATE cms_workflow_instances SET current_state_id=?,lock_version=lock_version+1,updated_at=now()
+            WHERE id=? AND lock_version=?
+            """,targetStateId,workflowInstanceId,lockVersion);
+        if(changed!=1)throw new IllegalStateException("Workflow state was changed by another user. Reload before continuing.");
+        String comment=body.get("comment")==null?null:String.valueOf(body.get("comment"));
+        jdbc.update("""
+            INSERT INTO cms_workflow_history(workflow_instance_id,action_code,from_state_code,to_state_code,actor_username,comment)
+            VALUES (?,?,?,?,?,?)
+            """,workflowInstanceId,action,from,to,actor,comment);
+        if("DELETE".equals(action)) {
+            jdbc.update("UPDATE cms_content_items SET deleted_at=now(),updated_at=now(),updated_by=? WHERE id=? AND deleted_at IS NULL",actor,id);
+        }
+        Map<String,Object> result=new LinkedHashMap<>();
+        result.put("contentItemId",id);result.put("action",action);result.put("fromState",from);
+        result.put("toState",to);result.put("lockVersion",lockVersion+1);result.put("deleted","DELETE".equals(action));
+        return result;
+    }
+
+    @Transactional
+    public void archive(UUID id,String actor) {
+        executeWorkflowAction(id,Map.of("action","DELETE","comment","Deleted by content owner"),actor);
+    }
+
+    private Map<String,Object> workflowContext(UUID id) {
+        return jdbc.queryForMap("""
+            SELECT wi.id AS "workflowInstanceId",wi.workflow_version_id AS "workflowVersionId",
+                   wi.current_state_id AS "stateId",wi.lock_version AS "lockVersion",
+                   i.product_id AS "productId",i.owner_username AS "ownerUsername",
+                   ws.state_code AS "stateCode",ws.state_name AS "stateName",ws.is_initial AS "isInitial"
+            FROM cms_content_items i
+            JOIN cms_workflow_instances wi ON wi.content_item_id=i.id
+            JOIN cms_workflow_states ws ON ws.id=wi.current_state_id
+            WHERE i.id=? AND i.deleted_at IS NULL
+            """,id);
+    }
+
+    private Set<String> userRoles(String actor,UUID productId) {
+        if(actor==null||productId==null)return Set.of();
+        return new HashSet<>(jdbc.query("""
+            SELECT DISTINCT r.code
+            FROM app_users u
+            JOIN user_product_roles upr ON upr.user_id=u.id
+            JOIN roles r ON r.id=upr.role_id
+            WHERE (u.username=? OR u.external_subject=?) AND u.status='ACTIVE'
+              AND upr.product_id=? AND (upr.expires_at IS NULL OR upr.expires_at>now())
+            """,(rs,n)->rs.getString(1),actor,actor,productId));
+    }
+
+    private boolean matchesWorkflowRule(Map<String,Object> rule,Set<String> roles,String actor,String owner) {
+        Object rawRoles=rule.get("roles");
+        if(!(rawRoles instanceof List<?> requiredRoles)||requiredRoles.isEmpty())return false;
+        boolean roleMatch=roles.contains("SYSTEM_ADMIN")||requiredRoles.stream().anyMatch(r->roles.contains(String.valueOf(r)));
+        if(!roleMatch)return false;
+        String scope=Objects.toString(rule.get("scope"),"PRODUCT").toUpperCase(Locale.ROOT);
+        if(Set.of("OWNER","OWNED","CREATED_BY_ME").contains(scope))return actor!=null&&actor.equals(owner);
+        return true;
     }
 
     private UUID resolveWorkflow(UUID productId, UUID contentTypeId) {
