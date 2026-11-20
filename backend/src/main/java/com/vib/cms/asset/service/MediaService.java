@@ -21,7 +21,8 @@ public class MediaService {
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",\n        "video/mp4", "video/webm", "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg"
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "video/mp4", "video/webm", "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg"
     );
     private final JdbcTemplate jdbc;
     private final AssetStorageProvider storage;
