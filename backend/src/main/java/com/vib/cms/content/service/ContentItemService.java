@@ -46,7 +46,8 @@ public class ContentItemService {
         }
         sql.append(" ORDER BY i.updated_at DESC LIMIT ?");
         args.add(limit);
-        return jdbc.queryForList(sql.toString(), args.toArray());
+        List<Map<String,Object>> rows=jdbc.queryForList(sql.toString(), args.toArray());
+        return rows.stream().filter(row->canViewItem(row,actor)).toList();
     }
 
     public Map<String,Object> getForActor(UUID id,String actor) {
@@ -127,7 +128,8 @@ public class ContentItemService {
         return type;
     }
 
-    public Map<String,Object> getAuthoringDefinitionForItem(UUID itemId,String actor) {\n        requireVisible(itemId,actor);
+    public Map<String,Object> getAuthoringDefinitionForItem(UUID itemId,String actor) {
+        requireVisible(itemId,actor);
         Map<String,Object> definition = jdbc.queryForMap("""
             SELECT ct.id, ct.product_id AS "productId", ct.code, ct.name,
                    i.template_version_id AS "templateVersionId",
@@ -227,7 +229,8 @@ public class ContentItemService {
     }
 
     public Map<String,Object> workflowActions(UUID id, String actor) {
-        Map<String,Object> context = workflowContext(id);\n        if(!canViewItem(context,actor))throw new AccessDeniedException("You are not allowed to view this Content Item");
+        Map<String,Object> context = workflowContext(id);
+        if(!canViewItem(context,actor))throw new AccessDeniedException("You are not allowed to view this Content Item");
         UUID stateId=(UUID)context.get("stateId");
         UUID workflowVersionId=(UUID)context.get("workflowVersionId");
         UUID productId=(UUID)context.get("productId");
