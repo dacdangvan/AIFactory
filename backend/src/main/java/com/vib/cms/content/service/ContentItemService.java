@@ -278,6 +278,7 @@ public class ContentItemService {
             """,targetStateId,workflowInstanceId,lockVersion);
         if(changed!=1)throw new IllegalStateException("Workflow state was changed by another user. Reload before continuing.");
         String comment=body.get("comment")==null?null:String.valueOf(body.get("comment"));
+        if("REJECT".equals(action)&&(comment==null||comment.isBlank()))throw new IllegalArgumentException("A rejection reason is required");
         jdbc.update("""
             INSERT INTO cms_workflow_history(workflow_instance_id,action_code,from_state_code,to_state_code,actor_username,comment)
             VALUES (?,?,?,?,?,?)
@@ -317,7 +318,7 @@ public class ContentItemService {
             JOIN user_product_roles upr ON upr.user_id=u.id
             JOIN roles r ON r.id=upr.role_id
             WHERE (u.username=? OR u.external_subject=?) AND u.status='ACTIVE'
-              AND upr.product_id=? AND (upr.expires_at IS NULL OR upr.expires_at>now())
+              AND (upr.product_id=? OR r.code='SYSTEM_ADMIN') AND (upr.expires_at IS NULL OR upr.expires_at>now())
             """,(rs,n)->rs.getString(1),actor,actor,productId));
     }
 
