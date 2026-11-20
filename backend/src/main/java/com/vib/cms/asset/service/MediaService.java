@@ -37,7 +37,7 @@ public class MediaService {
         if (file.getSize() > MAX_FILE_SIZE) throw new IllegalArgumentException("Maximum file size is 20 MB");
         String contentType = Optional.ofNullable(file.getContentType()).orElse("application/octet-stream").toLowerCase(Locale.ROOT);
         if (!ALLOWED_TYPES.contains(contentType)) throw new IllegalArgumentException("File type is not allowed: " + contentType);
-        if (productId != null && jdbc.queryForObject("SELECT count(*) FROM products WHERE id=?", Integer.class, productId) == 0)
+        if (productId != null && jdbc.queryForObject("SELECT count(*) FROM products WHERE id=?", Long.class, productId) == 0L)
             throw new IllegalArgumentException("Product does not exist");
 
         String original = Optional.ofNullable(file.getOriginalFilename()).orElse("upload");
