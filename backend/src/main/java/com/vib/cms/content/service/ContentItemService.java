@@ -167,7 +167,9 @@ public class ContentItemService {
                 code,owner_username,created_by,updated_by,current_version)
             VALUES (?,?,?,?,?,?,?,?,?,1)
             """, id, productId, contentTypeId, templateVersionId, workflowVersionId, code, actor, actor, actor);
-        Map<String,Object> snapshot = Map.of("fields", fields);
+        Map<String,Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("fields", fields);
+        snapshot.put("seo", objectMap(body.get("seo")));
         jdbc.update("""
             INSERT INTO cms_content_versions(content_item_id,version_no,data_snapshot,locale_metadata,created_by)
             VALUES (?,1,?::jsonb,?::jsonb,?)
@@ -223,7 +225,7 @@ public class ContentItemService {
         jdbc.update("""
             INSERT INTO cms_content_versions(content_item_id,version_no,data_snapshot,locale_metadata,created_by)
             VALUES (?, ?, ?::jsonb, ?::jsonb, ?)
-            """, id, next, json(Map.of("fields",fields)),
+            """, id, next, json(contentSnapshot(fields, objectMap(body.get("seo")))),
                 json(Map.of("locales",List.of("vi-VN","en-US"))), actor);
         return get(id);
     }
