@@ -129,7 +129,7 @@ public class ContentItemService {
         Map<String,Object> current = jdbc.queryForMap("""
             SELECT i.product_id AS "productId", i.content_type_id AS "contentTypeId",
                    i.template_version_id AS "templateVersionId", i.current_version AS "currentVersion",
-                   i.workflow_version_id AS "workflowVersionId", i.template_version_id AS "templateVersionId",
+                   i.workflow_version_id AS "workflowVersionId",
                    i.owner_username AS "ownerUsername", wi.current_state_id AS "stateId", ws.state_code AS "stateCode", ws.is_initial AS "isInitial"
             FROM cms_content_items i
             JOIN cms_workflow_instances wi ON wi.content_item_id=i.id
@@ -138,7 +138,7 @@ public class ContentItemService {
             """, id);
         String state = Objects.toString(current.get("stateCode"), "");
         if (!Boolean.TRUE.equals(current.get("isInitial")) && !"REJECTED".equals(state)) {
-            throw new IllegalStateException("Content can only be edited in DRAFT or REJECTED state");
+            throw new IllegalStateException("Content can only be edited in its initial workflow state or REJECTED state");
         }
         // Keep using the exact immutable Template Version captured when this Content Item was created.
         // A later default-template change on the Content Type must not change an existing item's schema.
