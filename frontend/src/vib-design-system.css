@@ -461,3 +461,55 @@ td small{font-size:10px;color:#9aabba}
   .item-editor .locale-grid { grid-template-columns: minmax(0, 1fr); }
   .item-editor .option-list { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Force the VIB select treatment for schema-driven dropdown fields */
+.item-editor select,
+.item-editor select.vib-select,
+.item-editor .field select,
+.item-editor .repeater-row select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 11px 46px 11px 14px !important;
+  border: 1px solid #d5e1ea !important;
+  border-radius: 11px !important;
+  background-color: #fff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235f7f98' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 18px 18px !important;
+  color: #244761 !important;
+  font: 500 13px/1.4 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  box-shadow: 0 1px 2px rgba(20,50,75,.035) !important;
+  cursor: pointer !important;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease !important;
+}
+.item-editor select:hover,
+.item-editor select.vib-select:hover {
+  border-color: #9dbbd0 !important;
+  background-color: #fcfdff !important;
+}
+.item-editor select:focus,
+.item-editor select.vib-select:focus {
+  outline: none !important;
+  border-color: #6fa4c9 !important;
+  box-shadow: 0 0 0 4px rgba(7,91,150,.10) !important;
+}
+.item-editor select:disabled,
+.item-editor select.vib-select:disabled {
+  background-color: #f4f7f9 !important;
+  color: #8b9ba8 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+.item-editor select option {
+  padding: 10px 12px;
+  background: #fff;
+  color: #244761;
+  font-size: 13px;
+}
