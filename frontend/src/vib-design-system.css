@@ -513,3 +513,35 @@ td small{font-size:10px;color:#9aabba}
   color: #244761;
   font-size: 13px;
 }
+
+/* Shared searchable Select component */
+.vib-select-root{position:relative;display:block;width:100%;min-width:0;color:#244761;font:inherit}
+.vib-select-trigger{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;width:100%!important;min-width:0!important;min-height:44px!important;margin:0!important;padding:10px 13px!important;border:1px solid #d7e2ea!important;border-radius:10px!important;background:#fff!important;color:#294b65!important;font:500 13px/1.4 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;text-align:left!important;box-shadow:0 1px 2px rgba(20,50,75,.035)!important;cursor:pointer!important;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease!important}
+.vib-select-trigger>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vib-select-trigger>svg{flex:0 0 auto;color:#718ba0;transition:transform .16s ease}
+.vib-select-trigger:hover:not(:disabled){border-color:#a9c4d7!important;background:#fcfdff!important}
+.vib-select-trigger:focus-visible,.vib-select-trigger.is-open{outline:none!important;border-color:#6fa4c9!important;box-shadow:0 0 0 4px rgba(7,91,150,.10)!important}
+.vib-select-trigger.is-open>svg{transform:rotate(180deg)}
+.vib-select-trigger.is-placeholder{color:#91a2b0!important;font-weight:450!important}
+.vib-select-trigger:disabled{background:#f4f7f9!important;color:#91a0ac!important;cursor:not-allowed!important;opacity:1!important}
+.vib-select-popover{position:absolute;z-index:1000;top:calc(100% + 7px);left:0;width:100%;min-width:220px;max-height:340px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #dce6ed;border-radius:13px;background:#fff;box-shadow:0 16px 42px rgba(24,55,78,.17);animation:vib-select-in .12s ease-out}
+@keyframes vib-select-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.vib-select-search{display:flex;align-items:center;gap:9px;flex:0 0 auto;padding:10px 12px;border-bottom:1px solid #edf1f4;color:#8ca0af}
+.vib-select-search input{width:100%!important;min-width:0!important;min-height:30px!important;padding:4px 0!important;border:0!important;outline:none!important;background:transparent!important;box-shadow:none!important;color:#294b65!important;font:400 12px Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
+.vib-select-search input::placeholder{color:#a2b0bb}
+.vib-select-search button{display:grid;place-items:center;width:25px;height:25px;flex:0 0 auto;border:0;border-radius:6px;background:transparent;color:#8ca0af;cursor:pointer}
+.vib-select-search button:hover{background:#f0f4f7;color:#3d607a}
+.vib-select-options{overflow-y:auto;overscroll-behavior:contain;padding:5px;min-height:42px}
+.vib-select-option{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;width:100%!important;min-height:36px!important;margin:0!important;padding:8px 10px!important;border:0!important;border-radius:8px!important;background:transparent!important;color:#526d82!important;font:400 12px/1.4 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;text-align:left!important;cursor:pointer!important}
+.vib-select-option>span{min-width:0;overflow-wrap:anywhere}
+.vib-select-option:hover,.vib-select-option.is-active{background:#f2f7fa!important;color:#1d5278!important}
+.vib-select-option.is-selected{background:#edf5fa!important;color:#0b5688!important;font-weight:650!important}
+.vib-select-option>svg{flex:0 0 auto;color:#0b7b59}
+.vib-select-option:disabled{opacity:.4;cursor:not-allowed!important}
+.vib-select-group{padding:9px 10px 5px;color:#91a2af;font-size:9px;font-weight:800;letter-spacing:.7px;text-transform:uppercase}
+.vib-select-empty{padding:22px 12px;text-align:center;color:#91a2af;font-size:11px}
+.vib-select-footer{padding:7px 12px;border-top:1px solid #edf1f4;background:#fbfcfd;color:#9aa9b5;font-size:9px}
+td .vib-select-root{min-width:130px}
+.panel-head>.vib-select-root,.panel-head>div>.vib-select-root{min-width:190px}
+.items-toolbar>.vib-select-root{min-width:220px}
+@media(max-width:720px){.vib-select-popover{max-height:280px}.panel-head>.vib-select-root,.panel-head>div>.vib-select-root{width:100%;min-width:0}}
