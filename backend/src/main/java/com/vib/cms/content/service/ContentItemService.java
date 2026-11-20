@@ -136,7 +136,7 @@ public class ContentItemService {
         jdbc.update("""
             INSERT INTO cms_workflow_history(workflow_instance_id,action_code,from_state_code,to_state_code,actor_username,comment)
             VALUES (?,'CREATE',NULL,?,?,?)
-            """, workflowInstanceId, initialStateCode, actor, "Created as Draft");
+            """, workflowInstanceId, initialStateCode, actor, "Created in initial workflow state");
         return get(id);
     }
 
