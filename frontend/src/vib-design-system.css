@@ -198,3 +198,15 @@ td small{font-size:10px;color:#9aabba}
 .workflow-readonly input,.workflow-readonly textarea,.workflow-readonly select{background:#f7f9fb!important;color:#74899a!important}
 .editor-workflow-buttons{min-width:260px}
 @media(max-width:760px){.workflow-action-panel{align-items:stretch;flex-direction:column}.workflow-action-buttons{justify-content:flex-start}.editor-workflow-buttons{justify-content:flex-start;min-width:0}}
+
+.workflow-history{margin:14px 0 20px;padding:15px 18px;border:1px solid var(--border);border-radius:13px;background:#fff}
+.workflow-history-title{display:flex;align-items:center;gap:8px;color:#345c79;font-size:11px}
+.workflow-history-title>span{margin-left:auto;color:#91a1af;font-size:9px}
+.workflow-history-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:13px}
+.workflow-history-entry{display:flex;gap:9px;padding:10px;border-radius:9px;background:#f8fafc}
+.workflow-history-marker{width:7px;height:7px;flex:0 0 7px;margin-top:5px;border-radius:50%;background:var(--vib-orange);box-shadow:0 0 0 4px var(--vib-orange-soft)}
+.workflow-history-detail{display:grid;gap:3px;min-width:0}
+.workflow-history-detail>b{font-size:10px;color:#315773}
+.workflow-history-detail>span{font-size:10px;color:var(--vib-blue)}
+.workflow-history-detail>small{font-size:9px;color:#91a1af}
+.workflow-history-detail>p{margin:3px 0 0;color:#758a9b;font-size:10px;white-space:normal}
