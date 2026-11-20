@@ -31,7 +31,8 @@ export default function ContentItemManagement({products,username,password}:Props
  const [fields,setFields]=useState<Record<string,any>>({});
  const [code,setCode]=useState("");
  const [editingId,setEditingId]=useState<string|null>(null);
- const [expectedVersion,setExpectedVersion]=useState(1);\n const [workflowActions,setWorkflowActions]=useState<Row[]>([]);\n const [workflowState,setWorkflowState]=useState<Row|null>(null);\n const [readOnly,setReadOnly]=useState(false);
+ const [expectedVersion,setExpectedVersion]=useState(1);
+ const [workflowActions,setWorkflowActions]=useState<Row[]>([]);\n const [workflowState,setWorkflowState]=useState<Row|null>(null);\n const [readOnly,setReadOnly]=useState(false);
  const [showEditor,setShowEditor]=useState(false);
  const [keyword,setKeyword]=useState("");
  const [busy,setBusy]=useState(false);
