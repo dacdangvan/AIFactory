@@ -20,6 +20,18 @@ public class ContentConfigurationController {
     public ApiResponse<List<Map<String,Object>>> contentTypes(@RequestParam UUID productId) {
         return ApiResponse.ok(service.listContentTypes(productId));
     }
+    @PutMapping("/content-types/{id}")
+    public ApiResponse<Map<String,Object>> updateContentType(@PathVariable UUID id, @RequestBody Map<String,Object> body, Authentication auth) {
+        return ApiResponse.ok(service.updateContentType(id, body, actor(auth)));
+    }
+    @PatchMapping("/content-types/{id}/status")
+    public ApiResponse<Map<String,Object>> contentTypeStatus(@PathVariable UUID id, @RequestBody Map<String,Object> body) {
+        return ApiResponse.ok(service.setContentTypeStatus(id, String.valueOf(body.get("status"))));
+    }
+    @DeleteMapping("/content-types/{id}")
+    public ApiResponse<Map<String,Object>> archiveContentType(@PathVariable UUID id) {
+        return ApiResponse.ok(service.setContentTypeStatus(id, "ARCHIVED"));
+    }
     @PostMapping("/content-types")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Map<String,Object>> createContentType(@RequestParam UUID productId,
@@ -29,6 +41,18 @@ public class ContentConfigurationController {
     @GetMapping("/authoring-templates")
     public ApiResponse<List<Map<String,Object>>> templates(@RequestParam UUID productId) {
         return ApiResponse.ok(service.listTemplates(productId));
+    }
+    @PutMapping("/authoring-templates/{id}")
+    public ApiResponse<Map<String,Object>> updateTemplate(@PathVariable UUID id, @RequestBody Map<String,Object> body, Authentication auth) {
+        return ApiResponse.ok(service.updateTemplate(id, body, actor(auth)));
+    }
+    @PatchMapping("/authoring-templates/{id}/status")
+    public ApiResponse<Map<String,Object>> templateStatus(@PathVariable UUID id, @RequestBody Map<String,Object> body) {
+        return ApiResponse.ok(service.setTemplateStatus(id, String.valueOf(body.get("status"))));
+    }
+    @DeleteMapping("/authoring-templates/{id}")
+    public ApiResponse<Map<String,Object>> archiveTemplate(@PathVariable UUID id) {
+        return ApiResponse.ok(service.setTemplateStatus(id, "ARCHIVED"));
     }
     @PostMapping("/authoring-templates")
     @ResponseStatus(HttpStatus.CREATED)
