@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from "react";
-import {Plus,RefreshCw,FilePlus2,Edit3,Trash2,Save,ArrowLeft,Search,Languages,Layers} from "lucide-react";
+import {Plus,RefreshCw,FilePlus2,Edit3,Trash2,Save,ArrowLeft,Search,Languages,Layers,Send,Undo2,CheckCircle2,XCircle,Globe,Workflow,Lock} from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import AssetField from "./AssetField";
 
@@ -20,7 +20,7 @@ const blankValue=(field:FieldDef):any=>{
 };
 const slug=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 
-export default function ContentItemManagement({products,username,password}:Props){
+const WorkflowIcon=({code}:{code:string})=>{switch(code){case "SUBMIT":case "RESUBMIT":return <Send size={14}/>;case "RECALL":return <Undo2 size={14}/>;case "APPROVE":return <CheckCircle2 size={14}/>;case "REJECT":return <XCircle size={14}/>;case "PUBLISH":return <Globe size={14}/>;case "DELETE":return <Trash2 size={14}/>;case "SAVE":return <Save size={14}/>;default:return <Workflow size={14}/>;}};\n\nexport default function ContentItemManagement({products,username,password}:Props){
  const [productId,setProductId]=useState("");
  const [types,setTypes]=useState<Row[]>([]);
  const [typeId,setTypeId]=useState("");
@@ -29,7 +29,7 @@ export default function ContentItemManagement({products,username,password}:Props
  const [fields,setFields]=useState<Record<string,any>>({});
  const [code,setCode]=useState("");
  const [editingId,setEditingId]=useState<string|null>(null);
- const [expectedVersion,setExpectedVersion]=useState(1);
+ const [expectedVersion,setExpectedVersion]=useState(1);\n const [workflowActions,setWorkflowActions]=useState<Row[]>([]);\n const [workflowState,setWorkflowState]=useState<Row|null>(null);\n const [readOnly,setReadOnly]=useState(false);
  const [showEditor,setShowEditor]=useState(false);
  const [keyword,setKeyword]=useState("");
  const [busy,setBusy]=useState(false);
@@ -73,7 +73,7 @@ export default function ContentItemManagement({products,username,password}:Props
    setDefinition(d);
    const next:Record<string,any>={};
    for(const f of (d.fieldSchema?.fields||[]) as FieldDef[])next[f.code]=blankValue(f);
-   setFields(next);setCode("");setEditingId(null);setExpectedVersion(1);setShowEditor(true);
+   setFields(next);setCode("");setEditingId(null);setExpectedVersion(1);setWorkflowActions([]);setWorkflowState(null);setReadOnly(false);setShowEditor(true);
   }catch(e:any){setError(e.message)}finally{setBusy(false)}
  };
  const startEdit=async(item:Row)=>{
@@ -85,14 +85,42 @@ export default function ContentItemManagement({products,username,password}:Props
    setEditingId(item.id);setExpectedVersion(Number(detail.currentVersion||1));setTypeId(item.contentTypeId);setShowEditor(true);
   }catch(e:any){setError(e.message)}finally{setBusy(false)}
  };
- const save=()=>run(async()=>{
+ const persistContent=async():Promise<string>=>{
   if(!typeId)throw new Error("Vui lòng chọn Content Type");
   if(!code.trim())throw new Error("Content Code là bắt buộc");
   const payload={code:code.trim(),fields,expectedVersion};
-  if(editingId)await api("/api/v1/content-items/"+editingId,username,password,{method:"PUT",body:JSON.stringify(payload)});
-  else await api("/api/v1/content-items?productId="+productId+"&contentTypeId="+typeId,username,password,{method:"POST",body:JSON.stringify(payload)});
-  setShowEditor(false);setEditingId(null);setDefinition(null);
- },editingId?"Đã lưu phiên bản nội dung mới":"Đã tạo Content Item và khởi tạo Workflow");
+  if(editingId){await api("/api/v1/content-items/"+editingId,username,password,{method:"PUT",body:JSON.stringify(payload)});return editingId;}
+  const created=await api("/api/v1/content-items?productId="+productId+"&contentTypeId="+typeId,username,password,{method:"POST",body:JSON.stringify(payload)});
+  return String(created.id);
+ };
+ const performItemAction=async(id:string,action:string,comment?:string)=>{
+  const wf=await api("/api/v1/content-items/"+id+"/workflow-actions",username,password);
+  const selected=(wf.availableActions||[]).find((x:Row)=>x.code===action);
+  if(!selected)throw new Error("Bạn không có quyền thực hiện thao tác "+action+" ở trạng thái hiện tại");
+  return api("/api/v1/content-items/"+id+"/workflow-actions",username,password,{method:"POST",body:JSON.stringify({action,comment,expectedLockVersion:wf.lockVersion})});
+ };
+ const finishWorkflow=()=>{setShowEditor(false);setEditingId(null);setDefinition(null);setWorkflowActions([]);setWorkflowState(null);};
+ const saveDraft=()=>run(async()=>{
+  if(readOnly)throw new Error("Content Item đang ở trạng thái chỉ xem");
+  const id=await persistContent();
+  await performItemAction(id,"SAVE");
+  finishWorkflow();
+ },"Đã lưu nháp");
+ const submitForReview=()=>run(async()=>{
+  if(readOnly)throw new Error("Bạn không có quyền chỉnh sửa nội dung này");
+  const id=await persistContent();
+  await performItemAction(id,"SUBMIT");
+  finishWorkflow();
+ },"Đã gửi nội dung để duyệt");
+ const executeAction=(action:Row)=>run(async()=>{
+  if(!editingId)throw new Error("Content Item chưa được lưu");
+  let comment:string|undefined;
+  if(action.code==="REJECT"){comment=window.prompt("Nhập lý do từ chối (bắt buộc)")||"";if(!comment.trim())throw new Error("Vui lòng nhập lý do từ chối");}
+  if(action.code==="DELETE"&&!window.confirm("Xóa Content Item "+code+"?"))return;
+  if(action.code==="APPROVE"&&!window.confirm("Xác nhận phê duyệt Content Item "+code+"?"))return;
+  await api("/api/v1/content-items/"+editingId+"/workflow-actions",username,password,{method:"POST",body:JSON.stringify({action:action.code,comment,expectedLockVersion:workflowState?.lockVersion})});
+  finishWorkflow();
+ },action.code==="DELETE"?"Đã xóa Content Item":action.code==="REJECT"?"Đã từ chối nội dung":action.code==="APPROVE"?"Đã phê duyệt nội dung":"Đã thực hiện "+action.name);
  const archive=async(item:Row)=>{
   if(!window.confirm("Archive Content Item "+item.code+"?"))return;
   await run(async()=>{await api("/api/v1/content-items/"+item.id,username,password,{method:"DELETE"})},"Đã archive Content Item");
@@ -135,12 +163,12 @@ export default function ContentItemManagement({products,username,password}:Props
    <div className="panel-head"><div><h2>Content Items</h2><p>Nhập và quản lý nội dung theo Authoring Template được gán cho từng Content Type.</p></div><div style={{display:"flex",gap:8}}><select value={productId} onChange={e=>setProductId(e.target.value)}><option value="">Chọn Product</option>{products.map(p=><option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}</select><button className="icon-btn" onClick={refresh} title="Refresh"><RefreshCw size={16}/></button></div></div>
    {error&&<div className="alert error">{error}</div>}{notice&&<div className="alert success">{notice}</div>}
    {!showEditor?<><div className="items-toolbar"><label className="field"><span>Content Type</span><select value={typeId} onChange={e=>setTypeId(e.target.value)}><option value="">Tất cả Content Type</option>{types.map(t=><option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}</select></label><label className="search"><Search size={16}/><input placeholder="Tìm Content Code..." value={keyword} onChange={e=>setKeyword(e.target.value)}/></label><button className="primary" disabled={!typeId||busy} onClick={startCreate}><FilePlus2 size={15}/> Tạo Content Item</button></div>
-    <div className="table-wrap"><table><thead><tr><th>CONTENT CODE</th><th>CONTENT TYPE</th><th>WORKFLOW STATE</th><th>VERSION</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><b>{item.code}</b><small>{item.id}</small></td><td>{item.contentTypeName}</td><td><span className="tag">{item.workflowStateName||item.workflowState||"—"}</span></td><td>v{item.currentVersion}</td><td>{item.updatedAt?new Date(item.updatedAt).toLocaleString("vi-VN"):"—"}</td><td><div style={{display:"flex",gap:6}}><button className="icon-btn" title="Edit" onClick={()=>startEdit(item)}><Edit3 size={15}/></button><button className="icon-btn" title="Archive" onClick={()=>archive(item)}><Trash2 size={15}/></button></div></td></tr>)}{!items.length&&<tr><td colSpan={6} style={{textAlign:"center",padding:28,color:"var(--muted)"}}>Chưa có Content Item nào</td></tr>}</tbody></table></div></>:<div className="item-editor">
+    <div className="table-wrap"><table><thead><tr><th>CONTENT CODE</th><th>CONTENT TYPE</th><th>WORKFLOW STATE</th><th>VERSION</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><b>{item.code}</b><small>{item.id}</small></td><td>{item.contentTypeName}</td><td><span className="tag">{item.workflowStateName||item.workflowState||"—"}</span></td><td>v{item.currentVersion}</td><td>{item.updatedAt?new Date(item.updatedAt).toLocaleString("vi-VN"):"—"}</td><td><div style={{display:"flex",gap:6}}><button className="icon-btn" title="Workflow / Edit" onClick={()=>startEdit(item)}><Workflow size={15}/></button><button className="icon-btn" title="Delete" onClick={()=>archive(item)}><Trash2 size={15}/></button></div></td></tr>)}{!items.length&&<tr><td colSpan={6} style={{textAlign:"center",padding:28,color:"var(--muted)"}}>Chưa có Content Item nào</td></tr>}</tbody></table></div></>:<div className="item-editor">
     <div className="editor-head"><div><button className="secondary" onClick={()=>setShowEditor(false)}><ArrowLeft size={14}/> Quay lại danh sách</button><h2>{editingId?"Chỉnh sửa Content Item":"Tạo Content Item mới"}</h2><p>{selectedProduct?.name} · {definition?.code} · {definition?.templateName} (v{definition?.templateVersion})</p></div><span className="tag blue">{editingId?"EDIT":"NEW"}</span></div>
     <div className="form-grid"><label className="field"><span>Content Code *</span><input value={code} disabled={!!editingId} placeholder="VD: HOME_LOAN_OVERVIEW" onChange={e=>setCode(e.target.value)}/></label><label className="field"><span>Content Type</span><input readOnly value={definition?.name||""}/></label></div>
     {(definition?.fieldSchema?.groups||[]).map((group:Row)=><section className="authoring-group" key={group.code}><div className="group-title"><Layers size={17}/><h3>{group.name}</h3></div><div className="form-grid">{schemaFields.filter(f=>f.group===group.code&&!repeaterChildCodes.has(f.code)).map(field=><div className="field" key={field.code} style={{gridColumn:["textarea","richtext","markdown","html","code","repeater","image","image_gallery","file","file_gallery","video","audio"].includes(field.type)?"1/-1":undefined}}><span>{field.label}{field.required?" *":""} <small>({field.code} · {field.type})</small></span>{renderField(field,fields[field.code]??blankValue(field),v=>setField(field,v))}</div>)}</div></section>)}
     {schemaFields.filter(f=>!repeaterChildCodes.has(f.code)&&!(definition?.fieldSchema?.groups||[]).some((g:Row)=>g.code===f.group)).map(field=><div className="field" key={field.code}><span>{field.label}{field.required?" *":""}</span>{renderField(field,fields[field.code]??blankValue(field),v=>setField(field,v))}</div>)}
-    <div className="editor-footer"><span>Content được lưu theo snapshot version; mỗi lần Save tạo một version mới.</span><button className="primary" disabled={busy} onClick={save}><Save size={15}/> {editingId?"Lưu phiên bản mới":"Lưu nội dung"}</button></div>
+    </div><div className="editor-footer"><span>Content được lưu theo snapshot version; mỗi lần lưu tạo một version mới.</span><div className="editor-workflow-buttons">{(!editingId||workflowActions.some(a=>a.code==="SAVE"))&&<button className="secondary" disabled={busy||readOnly} onClick={saveDraft}><Save size={15}/> Lưu nháp</button>}{(!editingId||workflowActions.some(a=>a.code==="SUBMIT"))&&<button className="primary" disabled={busy||readOnly} onClick={submitForReview}><Send size={15}/> Gửi duyệt</button>}</div></div>
    </div>}
   </div>
  </div>;
