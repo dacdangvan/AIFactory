@@ -1,4 +1,4 @@
-import {Children,cloneElement,isValidElement,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
+import {Children,isValidElement,useEffect,useMemo,useRef,useState,type ReactNode,type KeyboardEvent} from "react";
 import {Check,ChevronDown,Search,X} from "lucide-react";
 
 type Option={value:string;label:string;disabled?:boolean;group?:string};
@@ -36,7 +36,7 @@ export default function CustomSelect({value,defaultValue,onChange,children,disab
  useEffect(()=>{if(!open)return;const handler=(event:MouseEvent)=>{if(root.current&&!root.current.contains(event.target as Node)){setOpen(false);setQuery("");}};document.addEventListener("mousedown",handler);return()=>document.removeEventListener("mousedown",handler)},[open]);
  useEffect(()=>{if(open){setActive(Math.max(0,filtered.findIndex(o=>o.value===selectedValue)));requestAnimationFrame(()=>search.current?.focus())}},[open]);
  const move=(delta:number)=>{if(!filtered.length)return;setActive(current=>(current+delta+filtered.length)%filtered.length)};
- const keyDown=(event:React.KeyboardEvent<HTMLButtonElement>)=>{
+ const keyDown=(event:KeyboardEvent<HTMLButtonElement>)=>{
   if(event.key==="ArrowDown"){event.preventDefault();if(!open)setOpen(true);else move(1);}
   else if(event.key==="ArrowUp"){event.preventDefault();if(!open)setOpen(true);else move(-1);}
   else if(event.key==="Enter"&&open){event.preventDefault();const option=filtered[active];if(option&&!option.disabled)choose(option.value);}
