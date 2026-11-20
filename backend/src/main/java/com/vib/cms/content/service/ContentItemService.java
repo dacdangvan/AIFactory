@@ -228,6 +228,19 @@ public class ContentItemService {
         return get(id);
     }
 
+    public List<Map<String,Object>> workflowHistory(UUID id,String actor) {
+        requireVisible(id,actor);
+        return jdbc.queryForList("""
+            SELECT h.action_code AS "actionCode",h.from_state_code AS "fromState",
+                   h.to_state_code AS "toState",h.actor_username AS "actor",
+                   h.comment,h.created_at AS "createdAt"
+            FROM cms_workflow_history h
+            JOIN cms_workflow_instances wi ON wi.id=h.workflow_instance_id
+            WHERE wi.content_item_id=?
+            ORDER BY h.created_at DESC
+            """,id);
+    }
+
     public Map<String,Object> workflowActions(UUID id, String actor) {
         Map<String,Object> context = workflowContext(id);
         if(!canViewItem(context,actor))throw new AccessDeniedException("You are not allowed to view this Content Item");
