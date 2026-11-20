@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from "react";
-import {Plus,RefreshCw,FilePlus2,Edit3,Trash2,Save,ArrowLeft,Search,Languages,Layers,Send,Undo2,CheckCircle2,XCircle,Globe,Workflow,Lock} from "lucide-react";
+import {Plus,RefreshCw,FilePlus2,Edit3,Trash2,Save,ArrowLeft,Search,Languages,Layers,Send,Undo2,CheckCircle2,XCircle,Globe,Workflow} from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import AssetField from "./AssetField";
 
