@@ -29,6 +29,7 @@ export default function CustomSelect({value,defaultValue,onChange,children,disab
  const [query,setQuery]=useState("");
  const [active,setActive]=useState(0);
  const root=useRef<HTMLDivElement>(null);
+ const popup=useRef<HTMLDivElement>(null);
  const search=useRef<HTMLInputElement>(null);
  const [popupStyle,setPopupStyle]=useState<React.CSSProperties>({});
  const options=useMemo(()=>collect(children),[children]);
@@ -43,7 +44,7 @@ export default function CustomSelect({value,defaultValue,onChange,children,disab
    const available=Math.max(140,Math.min(desiredHeight,openUp?spaceAbove:spaceBelow));
    setPopupStyle({position:"fixed",left:Math.max(8,Math.min(rect.left,window.innerWidth-rect.width-8)),width:Math.min(rect.width,window.innerWidth-16),maxHeight:available,zIndex:10000,...(openUp?{bottom:window.innerHeight-rect.top+gap}:{top:rect.bottom+gap})});
   };
-  const outside=(event:MouseEvent)=>{if(root.current&&!root.current.contains(event.target as Node)){setOpen(false);setQuery("");}};
+  const outside=(event:MouseEvent)=>{if(!root.current?.contains(event.target as Node)&&!popup.current?.contains(event.target as Node)){setOpen(false);setQuery("");}};
   updatePosition();document.addEventListener("mousedown",outside);window.addEventListener("resize",updatePosition);window.addEventListener("scroll",updatePosition,true);
   return()=>{document.removeEventListener("mousedown",outside);window.removeEventListener("resize",updatePosition);window.removeEventListener("scroll",updatePosition,true)};
  },[open]);
@@ -61,7 +62,7 @@ export default function CustomSelect({value,defaultValue,onChange,children,disab
   <button id={id} type="button" title={title} aria-label={aria["aria-label"]} aria-haspopup="listbox" aria-expanded={open} aria-required={required} disabled={disabled} className={`vib-select-trigger ${open?"is-open":""} ${!selectedValue?"is-placeholder":""}`} onClick={()=>setOpen(v=>!v)} onKeyDown={keyDown}>
    <span>{selected?.label??placeholder??"Chọn..."}</span><ChevronDown size={17}/>
   </button>
-  {open&&createPortal(<div className="vib-select-popover vib-select-popover-portal" style={popupStyle}>
+  {open&&createPortal(<div className="vib-select-popover vib-select-popover-portal" style={popupStyle} ref={popup}>
    <div className="vib-select-search"><Search size={15}/><input ref={search} value={query} onChange={e=>{setQuery(e.target.value);setActive(0)}} onKeyDown={e=>{if(e.key==="ArrowDown"){e.preventDefault();move(1)}else if(e.key==="ArrowUp"){e.preventDefault();move(-1)}else if(e.key==="Enter"){e.preventDefault();const o=filtered[active];if(o&&!o.disabled)choose(o.value)}else if(e.key==="Escape"){setOpen(false);setQuery("")}}} placeholder="Tìm kiếm..." /><button type="button" aria-label="Đóng" onClick={()=>{setOpen(false);setQuery("")}}><X size={14}/></button></div>
    <div className="vib-select-options" role="listbox">
     {filtered.length?filtered.map((option,index)=>{const showGroup=option.group&&option.group!==lastGroup;lastGroup=option.group;return <div key={option.value}>{showGroup&&<div className="vib-select-group">{option.group}</div>}<button type="button" role="option" aria-selected={option.value===selectedValue} disabled={option.disabled} className={`vib-select-option ${index===active?"is-active":""} ${option.value===selectedValue?"is-selected":""}`} onMouseEnter={()=>setActive(index)} onClick={()=>choose(option.value)}><span>{option.label}</span>{option.value===selectedValue&&<Check size={15}/>}</button></div>}):<div className="vib-select-empty">Không tìm thấy kết quả</div>}
