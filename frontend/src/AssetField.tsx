@@ -55,7 +55,7 @@ export default function AssetField({value,onChange,productId,username,password,m
  };
  const remove=(index:number)=>{const next=assets.filter((_,i)=>i!==index);onChange(multiple?next:(next[0]||""))};
  return <div className="asset-field">
-  <input ref={input} type="file" hidden multiple={multiple} accept={accept||"image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"} onChange={e=>upload(e.target.files)}/>
+  <input ref={input} type="file" hidden multiple={multiple} accept={accept||"image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.mp4,.webm,.mp3,.m4a,.wav,.ogg"} onChange={e=>upload(e.target.files)}/>
   {assets.length>0&&<div className="asset-grid">{assets.map((asset,index)=>{const key=asset.id||asset.url||asset.name||String(index);const preview=previews[key];const image=(asset.contentType||"").startsWith("image/")||/\.(png|jpe?g|gif|webp)$/i.test(asset.name||asset.url||"");return <div className="asset-card" key={key}>{image&&preview?<img src={preview} alt={asset.name||"Uploaded asset"}/>:<div className="asset-file-icon">{image?<ImageIcon/>:<FileText/>}</div>}<div className="asset-meta"><b title={asset.name}>{asset.name||asset.id||"Asset"}</b><small>{formatSize(asset.size)}</small></div><div className="asset-actions">{asset.url&&<a href={asset.url} target="_blank" rel="noreferrer" title="Open asset"><ExternalLink size={14}/></a>}<button type="button" onClick={()=>remove(index)} title="Remove"><Trash2 size={14}/></button></div></div>})}</div>}
   <div className="asset-choices">
    <button type="button" className="asset-dropzone" disabled={busy} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();upload(e.dataTransfer.files)}}>
