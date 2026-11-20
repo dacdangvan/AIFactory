@@ -545,3 +545,7 @@ td .vib-select-root{min-width:130px}
 .panel-head>.vib-select-root,.panel-head>div>.vib-select-root{min-width:190px}
 .items-toolbar>.vib-select-root{min-width:220px}
 @media(max-width:720px){.vib-select-popover{max-height:280px}.panel-head>.vib-select-root,.panel-head>div>.vib-select-root{width:100%;min-width:0}}
+
+/* Portal dropdown: escape clipped/short parent containers and fit viewport */
+.vib-select-popover-portal{position:fixed!important;z-index:10000!important;max-width:calc(100vw - 16px)!important;max-height:min(340px,calc(100vh - 24px));}
+.vib-select-popover-portal .vib-select-options{min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;}
