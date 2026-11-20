@@ -20,6 +20,18 @@ public class WorkflowConfigurationController {
     public ApiResponse<List<Map<String,Object>>> list(@RequestParam(required=false) UUID productId) {
         return ApiResponse.ok(service.list(productId));
     }
+    @PutMapping("/{id}")
+    public ApiResponse<Map<String,Object>> update(@PathVariable UUID id, @RequestBody Map<String,Object> body, Authentication auth) {
+        return ApiResponse.ok(service.updateMetadata(id, body, auth==null?"local-dev":auth.getName()));
+    }
+    @PatchMapping("/{id}/status")
+    public ApiResponse<Map<String,Object>> status(@PathVariable UUID id, @RequestBody Map<String,Object> body) {
+        return ApiResponse.ok(service.setStatus(id, String.valueOf(body.get("status"))));
+    }
+    @DeleteMapping("/{id}")
+    public ApiResponse<Map<String,Object>> archive(@PathVariable UUID id) {
+        return ApiResponse.ok(service.setStatus(id, "ARCHIVED"));
+    }
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Map<String,Object>> create(@RequestBody Map<String,Object> definition, Authentication auth) {
