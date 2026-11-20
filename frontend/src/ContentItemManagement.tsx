@@ -49,33 +49,46 @@ export default function ContentItemManagement({products,username,password}:Props
  const schemaFields=useMemo(()=>((definition?.fieldSchema?.fields||[]) as FieldDef[]),[definition]);
  const repeaterChildCodes=useMemo(()=>new Set(schemaFields.flatMap(f=>f.type==="repeater"||f.cardinality==="REPEATER"?(f.itemFields||[]):[])),[schemaFields]);
  const seoSourceFields=useMemo(()=>{
-  const identify=(pattern:RegExp)=>schemaFields.find(f=>pattern.test(f.code+" "+f.label));
-  return {
-   title:identify(/(^|[_\\s-])(title|name|heading|headline)([_\\s-]|$)/i)||schemaFields.find(f=>/title|name|heading|headline/i.test(f.code+" "+f.label)),
-   description:identify(/(^|[_\\s-])(description|summary|excerpt|subtitle|intro)([_\\s-]|$)/i)||schemaFields.find(f=>/description|summary|excerpt|subtitle|intro/i.test(f.code+" "+f.label))
+  const normalize=(value:string)=>value.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/đ/gi,"d").toLowerCase().replace(/[^a-z0-9]/g,"");
+  const findField=(kind:"title"|"description")=>{
+   const candidates=schemaFields.filter(f=>f.type!=="repeater"&&f.cardinality!=="REPEATER");
+   const tokens=kind==="title"
+    ? ["title","name","heading","headline","tieude","tentieude","tenbai","tennoidung"]
+    : ["description","summary","excerpt","subtitle","intro","mota","tomtat","trichdan","noidungtomtat"];
+   return candidates.find(f=>{
+    const key=normalize(f.code+" "+f.label);
+    return tokens.some(token=>key.includes(token));
+   });
   };
+  return {title:findField("title"),description:findField("description")};
  },[schemaFields]);
  useEffect(()=>{
-  if(!schemaFields.length)return;
+  if(!schemaFields.length||(!seoSourceFields.title&&!seoSourceFields.description))return;
+  const readSource=(field:FieldDef|undefined,locale:string)=>{
+   if(!field)return "";
+   const raw=fields[field.code];
+   const value=raw&&typeof raw==="object"&&!Array.isArray(raw)
+    ? (raw[locale]??raw["vi-VN"]??raw["en-US"]??"")
+    : raw??"";
+   return String(value).replace(/<[^>]*>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&")
+    .replace(/\\s+/g," ").trim();
+  };
   setSeo(old=>{
    const next={...old};
    for(const locale of ["vi-VN","en-US"]){
     const current={...(next[locale]||{})};
-    const readSource=(field?:FieldDef)=>{
-     if(!field)return "";
-     const raw=fields[field.code];
-     return String(raw&&typeof raw==="object"&&!Array.isArray(raw)?(raw[locale]??raw["vi-VN"]??raw["en-US"]??""):raw??"").trim();
-    };
-    const title=readSource(seoSourceFields.title);
-    const description=readSource(seoSourceFields.description);
-    if(!String(current.title||"").trim()&&title)current.title=title.slice(0,70);
-    if(!String(current.description||"").trim()&&description)current.description=description.slice(0,170);
-    if(!String(current.slug||"").trim()&&(title||code))current.slug=slug(title||code);
+    const title=readSource(seoSourceFields.title,locale);
+    const description=readSource(seoSourceFields.description,locale);
+    if(seoSourceFields.title)current.title=title.slice(0,70);
+    if(seoSourceFields.description)current.description=description.slice(0,170);
+    if(seoSourceFields.title)current.ogTitle=title.slice(0,70);
+    if(seoSourceFields.description)current.ogDescription=description.slice(0,200);
+    if(seoSourceFields.title&&title)current.slug=slug(title);
     next[locale]=current;
    }
    return next;
   });
- },[fields,schemaFields,seoSourceFields,code]);
+ },[fields,schemaFields,seoSourceFields]);
 
  useEffect(()=>{if(!productId&&products.length)setProductId(products[0].id)},[products,productId]);
  const loadTypes=async()=>{
