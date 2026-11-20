@@ -60,8 +60,9 @@ export default function ContentItemManagement({products,username,password}:Props
     return tokens.some(token=>key.includes(token));
    });
   };
-  return {title:findField("title"),description:findField("description")};
- },[schemaFields]);
+  const imageField=schemaFields.find(f=>!repeaterChildCodes.has(f.code)&&f.type!=="repeater"&&f.cardinality!=="REPEATER"&&(["image","image_gallery"].includes(f.type)||/image|thumbnail|cover|banner|anhdaidien|anhbia|hinhanh/.test(normalize(f.code+" "+f.label))));
+  return {title:findField("title"),description:findField("description"),image:imageField};
+ },[schemaFields,repeaterChildCodes]);
  useEffect(()=>{
   if(!schemaFields.length||(!seoSourceFields.title&&!seoSourceFields.description))return;
   const readSource=(field:FieldDef|undefined,locale:string)=>{
@@ -72,6 +73,13 @@ export default function ContentItemManagement({products,username,password}:Props
     : raw??"";
    return String(value).replace(/<[^>]*>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&")
     .replace(/\s+/g," ").trim();
+  };
+  const readImage=(locale:string)=>{
+   const field=seoSourceFields.image;if(!field)return "";
+   let raw=fields[field.code];
+   if(field.localized&&raw&&typeof raw==="object"&&!Array.isArray(raw))raw=raw[locale]??raw["vi-VN"]??raw["en-US"]??"";
+   if(Array.isArray(raw))raw=raw[0];
+   return typeof raw==="string"?raw:(raw?.url||"");
   };
   setSeo(old=>{
    const next={...old};
@@ -84,6 +92,8 @@ export default function ContentItemManagement({products,username,password}:Props
     if(seoSourceFields.title)current.ogTitle=title.slice(0,70);
     if(seoSourceFields.description)current.ogDescription=description.slice(0,200);
     if(seoSourceFields.title&&title)current.slug=slug(title);
+    const imageUrl=readImage(locale);
+    if(seoSourceFields.image&&imageUrl)current.ogImage=imageUrl;
     next[locale]=current;
    }
    return next;
@@ -265,7 +275,7 @@ export default function ContentItemManagement({products,username,password}:Props
          <details className="seo-og-details"><summary>Open Graph / Social Sharing</summary>
           <label className="field"><span>OG Title</span><input value={value.ogTitle||""} onChange={e=>update("ogTitle",e.target.value)} placeholder="Mặc định dùng SEO Title"/></label>
           <label className="field"><span>OG Description</span><textarea rows={2} value={value.ogDescription||""} onChange={e=>update("ogDescription",e.target.value)} placeholder="Mặc định dùng Meta Description"/></label>
-          <label className="field"><span>OG Image URL</span><input value={value.ogImage||""} onChange={e=>update("ogImage",e.target.value)} placeholder="Chọn ảnh từ Media Library ở bước tiếp theo"/></label>
+          {seoSourceFields.image?<div className="seo-og-image-source"><span className="field-label">OG Image</span><div className="seo-og-image-linked"><span>Đang lấy ảnh từ trường <b>{seoSourceFields.image.label||seoSourceFields.image.code}</b> trong Content</span></div>{value.ogImage&&<><img className="seo-og-image-preview" src={value.ogImage} alt="Open Graph preview"/><small>Ảnh được đồng bộ tự động từ nội dung ảnh.</small></>}</div>:<div className="seo-og-image-editor"><label className="field"><span>OG Image URL</span><input value={value.ogImage||""} onChange={e=>update("ogImage",e.target.value)} placeholder="https://example.com/image.jpg"/></label><div className="seo-og-upload"><AssetField value={value.ogImage?{url:value.ogImage,name:value.ogImage.split("/").pop()||"OG Image",contentType:"image/*"}:""} onChange={(asset:any)=>update("ogImage",asset?.url||"")} productId={productId} username={username} password={password} accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"/></div><small>Nhập URL ảnh hoặc upload/chọn ảnh từ Media Library. Tối đa 20 MB.</small>{value.ogImage&&<img className="seo-og-image-preview" src={value.ogImage} alt="Open Graph preview"/>}</div>}
          </details>
         </div>;
        })}
