@@ -288,7 +288,8 @@ public class ContentItemService {
             boolean allowed=Boolean.TRUE.equals(decision.get("allowed"))&&!Boolean.TRUE.equals(decision.get("denied"));
             String code=Objects.toString(decision.get("code"),"");
             boolean hasTransition=Boolean.TRUE.equals(decision.get("changesState"));
-            if(allowed && (hasTransition || "SAVE".equals(code))) available.add(decision);
+            boolean actionChangesState=!Boolean.FALSE.equals(decision.get("actionChangesState"));
+            if(allowed && (hasTransition || !actionChangesState || "SAVE".equals(code))) available.add(decision);
         }
         Map<String,Object> deleteDecision=decisions.get("DELETE");
         boolean deleteExplicitlyDenied=deleteDecision!=null && Boolean.TRUE.equals(deleteDecision.get("denied"));
