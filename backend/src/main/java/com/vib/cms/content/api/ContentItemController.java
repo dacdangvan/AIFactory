@@ -30,8 +30,8 @@ public class ContentItemController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Map<String,Object>> get(@PathVariable UUID id) {
-        return ApiResponse.ok(service.get(id));
+    public ApiResponse<Map<String,Object>> get(@PathVariable UUID id,Authentication authentication) {
+        return ApiResponse.ok(service.getForActor(id,actor(authentication)));
     }
 
     @GetMapping("/{id}/authoring-definition")
