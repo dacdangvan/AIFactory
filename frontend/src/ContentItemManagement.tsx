@@ -27,6 +27,7 @@ export default function ContentItemManagement({products,username,password}:Props
  const [types,setTypes]=useState<Row[]>([]);
  const [typeId,setTypeId]=useState("");
  const [items,setItems]=useState<Row[]>([]);
+ const [itemActions,setItemActions]=useState<Record<string,Row[]>>({});
  const [definition,setDefinition]=useState<Row|null>(null);
  const [fields,setFields]=useState<Record<string,any>>({});
  const [code,setCode]=useState("");
@@ -59,7 +60,13 @@ export default function ContentItemManagement({products,username,password}:Props
   if(typeId)query.set("contentTypeId",typeId);
   if(keyword.trim())query.set("keyword",keyword.trim());
   const result=await api("/api/v1/content-items?"+query.toString(),username,password);
-  setItems(result||[]);
+  const rows=(result||[]) as Row[];
+  setItems(rows);
+  const actionEntries=await Promise.all(rows.map(async item=>{
+   try{const wf=await api("/api/v1/content-items/"+item.id+"/workflow-actions",username,password);return [item.id,(wf.availableActions||[]).filter((a:Row)=>a.code!=="SAVE")] as const;}
+   catch{return [item.id,[]] as const;}
+  }));
+  setItemActions(Object.fromEntries(actionEntries));
  };
  const refresh=async()=>{
   setBusy(true);setError("");
@@ -134,6 +141,19 @@ export default function ContentItemManagement({products,username,password}:Props
   await api("/api/v1/content-items/"+editingId+"/workflow-actions",username,password,{method:"POST",body:JSON.stringify({action:action.code,comment,expectedLockVersion:workflowState?.lockVersion})});
   finishWorkflow();
  },action.code==="DELETE"?"Đã xóa Content Item":action.code==="REJECT"?"Đã từ chối nội dung":action.code==="APPROVE"?"Đã phê duyệt nội dung":"Đã thực hiện "+action.name);
+ const quickAction=async(item:Row,action:Row)=>{
+  setBusy(true);setError("");setNotice("");
+  try{
+   let comment:string|undefined;
+   if(action.code==="REJECT"){comment=window.prompt("Nhập lý do từ chối (bắt buộc)")||"";if(!comment.trim())throw new Error("Vui lòng nhập lý do từ chối");}
+   if(action.code==="DELETE"&&!window.confirm("Xóa Content Item "+item.code+"?"))throw new Error("Đã hủy thao tác xóa");
+   if(action.code==="APPROVE"&&!window.confirm("Xác nhận phê duyệt Content Item "+item.code+"?"))throw new Error("Đã hủy thao tác phê duyệt");
+   await performItemAction(item.id,action.code,comment);
+   setNotice(action.code==="DELETE"?"Đã xóa Content Item":action.code==="REJECT"?"Đã từ chối nội dung":action.code==="APPROVE"?"Đã phê duyệt nội dung":"Đã thực hiện "+(action.name||action.code));
+   await loadItems();
+  }catch(e:any){if(e.message!=="Đã hủy thao tác xóa"&&e.message!=="Đã hủy thao tác phê duyệt")setError(e.message||"Không thể thực hiện thao tác");}
+  finally{setBusy(false)}
+ };
  const setField=(field:FieldDef,value:any)=>setFields(old=>({...old,[field.code]:value}));
  const renderControl=(field:FieldDef,value:any,onChange:(v:any)=>void)=>{
   const common={required:!!field.required,placeholder:field.options?.placeholder||""};
@@ -172,7 +192,7 @@ export default function ContentItemManagement({products,username,password}:Props
    <div className="panel-head"><div><h2>Content Items</h2><p>Nhập và quản lý nội dung theo Authoring Template được gán cho từng Content Type.</p></div><div style={{display:"flex",gap:8}}><select value={productId} onChange={e=>setProductId(e.target.value)}><option value="">Chọn Product</option>{products.map(p=><option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}</select><button className="icon-btn" onClick={refresh} title="Refresh"><RefreshCw size={16}/></button></div></div>
    {error&&<div className="alert error">{error}</div>}{notice&&<div className="alert success">{notice}</div>}
    {!showEditor?<><div className="items-toolbar"><label className="field"><span>Content Type</span><select value={typeId} onChange={e=>setTypeId(e.target.value)}><option value="">Tất cả Content Type</option>{types.map(t=><option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}</select></label><label className="search"><Search size={16}/><input placeholder="Tìm Content Code..." value={keyword} onChange={e=>setKeyword(e.target.value)}/></label><button className="primary" disabled={!typeId||busy} onClick={startCreate}><FilePlus2 size={15}/> Tạo Content Item</button></div>
-    <div className="table-wrap"><table><thead><tr><th>CONTENT CODE</th><th>CONTENT TYPE</th><th>WORKFLOW STATE</th><th>VERSION</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><b>{item.code}</b><small>{item.id}</small></td><td>{item.contentTypeName}</td><td><span className="tag">{item.workflowStateName||item.workflowState||"—"}</span></td><td>v{item.currentVersion}</td><td>{item.updatedAt?new Date(item.updatedAt).toLocaleString("vi-VN"):"—"}</td><td><div style={{display:"flex",gap:6}}><button className="icon-btn" title="Workflow / Edit / Review" onClick={()=>startEdit(item)}><Workflow size={15}/></button></div></td></tr>)}{!items.length&&<tr><td colSpan={6} style={{textAlign:"center",padding:28,color:"var(--muted)"}}>Chưa có Content Item nào</td></tr>}</tbody></table></div></>:<div className="item-editor">
+    <div className="table-wrap"><table className="content-items-table"><thead><tr><th>CONTENT CODE</th><th>CONTENT TYPE</th><th>WORKFLOW STATE</th><th>VERSION</th><th>UPDATED</th><th>QUICK ACTIONS</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td className="content-code-cell"><b>{item.code}</b><small>{item.id}</small></td><td>{item.contentTypeName}</td><td><span className="tag">{item.workflowStateName||item.workflowState||"—"}</span></td><td>v{item.currentVersion}</td><td>{item.updatedAt?new Date(item.updatedAt).toLocaleString("vi-VN"):"—"}</td><td><div className="content-item-quick-actions">{(itemActions[item.id]||[]).map(action=><button key={action.code} type="button" className={"quick-action "+(action.code==="APPROVE"||action.code==="PUBLISH"?"quick-action-positive":action.code==="REJECT"||action.code==="DELETE"?"quick-action-danger":"")} title={action.name||action.code} onClick={()=>quickAction(item,action)} disabled={busy}><WorkflowIcon code={action.code}/><span>{action.name||action.code}</span></button>)}<button type="button" className="icon-btn quick-open" title="Mở chi tiết / chỉnh sửa" onClick={()=>startEdit(item)} disabled={busy}><Edit3 size={14}/></button></div></td></tr>)}{!items.length&&<tr><td colSpan={6} style={{textAlign:"center",padding:28,color:"var(--muted)"}}>Chưa có Content Item nào</td></tr>}</tbody></table></div></>:<div className="item-editor">
     <div className="editor-head"><div><button className="secondary" onClick={()=>setShowEditor(false)}><ArrowLeft size={14}/> Quay lại danh sách</button><h2>{editingId?(readOnly?"Xem / xử lý Content Item":"Chỉnh sửa Content Item"):"Tạo Content Item mới"}</h2><p>{selectedProduct?.name} · {definition?.code} · {definition?.templateName} (v{definition?.templateVersion})</p></div><span className="tag blue">{editingId?(workflowState?.stateName||workflowState?.stateCode||"WORKFLOW"):"NEW"}</span></div>
     {editingId&&<div className="workflow-action-panel"><div className="workflow-current"><span>TRẠNG THÁI WORKFLOW</span><b>{workflowState?.stateName||workflowState?.stateCode||"—"}</b><small>{readOnly?"Chế độ chỉ xem · Không có quyền lưu":"Có thể thao tác theo quyền Workflow của bạn"}</small></div><div className="workflow-action-buttons">{workflowActions.filter(a=>a.code!=="SAVE"&&a.code!=="SUBMIT").map(action=><button key={action.code} type="button" className={action.code==="REJECT"||action.code==="DELETE"?"secondary workflow-danger":action.code==="APPROVE"||action.code==="PUBLISH"?"primary workflow-success":"secondary"} onClick={()=>executeAction(action)} disabled={busy}><WorkflowIcon code={action.code}/>{action.name}</button>)}</div></div>}
     {editingId&&workflowHistory.length>0&&<section className="workflow-history"><div className="workflow-history-title"><History size={15}/><b>Lịch sử xử lý</b><span>{workflowHistory.length} hoạt động</span></div><div className="workflow-history-list">{workflowHistory.map((entry,index)=><div className="workflow-history-entry" key={index}><div className="workflow-history-marker"/><div className="workflow-history-detail"><b>{entry.actionCode}</b><span>{entry.fromState?entry.fromState+" → ":""}{entry.toState}</span><small>{entry.actor} · {entry.createdAt?new Date(entry.createdAt).toLocaleString("vi-VN"):""}</small>{entry.comment&&<p>{entry.comment}</p>}</div></div>)}</div></section>}
