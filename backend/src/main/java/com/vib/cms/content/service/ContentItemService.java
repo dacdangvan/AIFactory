@@ -250,7 +250,7 @@ public class ContentItemService {
             }
             Map<String,Object> validation = objectMap(field.get("validation"));
             String sample = localized && value instanceof Map<?,?> m
-                ? Objects.toString(m.get("vi-VN"), m.values().stream().findFirst().orElse("")) : Objects.toString(value,"");
+                ? Objects.toString(m.get("vi-VN"), m.values().stream().findFirst().map(String::valueOf).orElse("")) : Objects.toString(value,"");
             if (validation.get("minLength") instanceof Number min && sample.length()<min.intValue())
                 throw new IllegalArgumentException(code+" must contain at least "+min+" characters");
             if (validation.get("maxLength") instanceof Number max && sample.length()>max.intValue())
