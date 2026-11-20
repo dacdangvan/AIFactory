@@ -49,7 +49,7 @@ public class MediaService {
         if (dot >= 0 && dot < original.length() - 1) extension = original.substring(dot).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9.]", "");
         UUID id = UUID.randomUUID();
         String objectKey = LocalDate.now() + "/" + id + extension;
-        storage.upload(file.getInputStream(), objectKey, contentType, file.getSize());
+        try (var input = file.getInputStream()) {\n            storage.upload(input, objectKey, contentType, file.getSize());\n        }
         try {
             jdbc.update("""
                 INSERT INTO cms_assets(id,product_id,original_filename,object_key,content_type,file_size,created_by)
