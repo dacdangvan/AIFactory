@@ -15,12 +15,14 @@ public class WorkflowConfigurationService {
 
     public List<Map<String,Object>> list(UUID productId) {
         if(productId==null) return jdbc.queryForList("""
-            SELECT id,product_id AS "productId",code,name,description,status
-            FROM cms_workflow_definitions ORDER BY name
+            SELECT d.id,d.product_id AS "productId",d.code,d.name,d.description,d.status,
+                   (SELECT v.id FROM cms_workflow_versions v WHERE v.workflow_id=d.id ORDER BY v.version_no DESC LIMIT 1) AS "versionId"
+            FROM cms_workflow_definitions d ORDER BY name
             """);
         return jdbc.queryForList("""
-            SELECT id,product_id AS "productId",code,name,description,status
-            FROM cms_workflow_definitions WHERE product_id=? OR product_id IS NULL ORDER BY product_id NULLS FIRST,name
+            SELECT d.id,d.product_id AS "productId",d.code,d.name,d.description,d.status,
+                   (SELECT v.id FROM cms_workflow_versions v WHERE v.workflow_id=d.id ORDER BY v.version_no DESC LIMIT 1) AS "versionId"
+            FROM cms_workflow_definitions d WHERE (d.product_id=? OR d.product_id IS NULL) AND d.status <> 'ARCHIVED' ORDER BY d.product_id NULLS FIRST,d.name
             """,productId);
     }
 
