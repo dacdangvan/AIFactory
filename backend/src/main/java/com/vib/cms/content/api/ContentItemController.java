@@ -53,6 +53,11 @@ public class ContentItemController {
         return ApiResponse.ok(service.update(id,body,actor(authentication)));
     }
 
+    @GetMapping("/{id}/workflow-history")
+    public ApiResponse<List<Map<String,Object>>> workflowHistory(@PathVariable UUID id,Authentication authentication) {
+        return ApiResponse.ok(service.workflowHistory(id,actor(authentication)));
+    }
+
     @GetMapping("/{id}/workflow-actions")
     public ApiResponse<Map<String,Object>> workflowActions(@PathVariable UUID id,Authentication authentication) {
         return ApiResponse.ok(service.workflowActions(id,actor(authentication)));
