@@ -61,3 +61,13 @@ The `expectedVersion` is required for safe updates in practice; the current API 
 - Media fields accept a URL/Asset ID. Browser upload, asset picker, scanning and asset-reference management require the Media Library implementation.
 - Field-level min/max and regex validation are applied where configured. Cross-field custom rules and all type-specific validation are not yet evaluated server-side.
 - Content item routes, slug collision handling and 301 redirects are not activated by this increment.
+
+
+## SEO metadata and URL preview
+
+- Each Content Item version snapshot now stores a sibling `seo` object alongside `fields`; the SEO values are immutable with that content version.
+- SEO values are localized for `vi-VN` and `en-US`: title, meta description, keywords, URL slug, Open Graph title, Open Graph description and Open Graph image URL.
+- The editor derives a suggested slug from the first localized field whose code or label resembles title/name/heading. An explicitly entered slug overrides the suggestion.
+- The UI displays a URL preview using the locale, Product code/name slug and Content Item slug.
+- The preview is advisory only. This increment does not activate public routes, check slug collisions, retain route history, create 301 redirects, update release manifests or invalidate CDN/cache. Those remain part of Publishing Runtime.
+- SEO metadata is sent in the same create/update request as content fields and persisted in the same immutable `cms_content_versions.data_snapshot`. Existing items without SEO metadata load with empty localized SEO values.
