@@ -34,6 +34,11 @@ public class ContentItemController {
         return ApiResponse.ok(service.get(id));
     }
 
+    @GetMapping("/{id}/authoring-definition")
+    public ApiResponse<Map<String,Object>> definitionForItem(@PathVariable UUID id) {
+        return ApiResponse.ok(service.getAuthoringDefinitionForItem(id));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Map<String,Object>> create(@RequestParam UUID productId,
