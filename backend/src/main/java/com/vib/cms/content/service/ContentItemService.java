@@ -436,6 +436,13 @@ public class ContentItemService {
         return defaults.getFirst();
     }
 
+    private Map<String,Object> contentSnapshot(Map<String,Object> fields, Map<String,Object> seo) {
+        Map<String,Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("fields", fields);
+        snapshot.put("seo", seo == null ? Map.of() : seo);
+        return snapshot;
+    }
+
     private void validateFields(Map<String,Object> schema, Map<String,Object> values) {
         Object raw = schema.get("fields");
         if (!(raw instanceof List<?> fields)) return;
