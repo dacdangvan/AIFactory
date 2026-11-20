@@ -77,7 +77,7 @@ export default function ContentItemManagement({products,username,password}:Props
  const startEdit=async(item:Row)=>{
   setBusy(true);setError("");setNotice("");
   try{
-   const d=await api("/api/v1/content-items/authoring-definition?contentTypeId="+item.contentTypeId,username,password);
+   const d=await api("/api/v1/content-items/"+item.id+"/authoring-definition",username,password);
    const detail=await api("/api/v1/content-items/"+item.id,username,password);
    setDefinition(d);setFields(detail.dataSnapshot?.fields||{});setCode(detail.code||"");
    setEditingId(item.id);setExpectedVersion(Number(detail.currentVersion||1));setTypeId(item.contentTypeId);setShowEditor(true);
