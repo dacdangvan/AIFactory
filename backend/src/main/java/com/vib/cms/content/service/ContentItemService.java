@@ -203,12 +203,21 @@ public class ContentItemService {
                 int min=number(options.get("minItems"),0), max=number(options.get("maxItems"),0);
                 if (rows.size()<min) throw new IllegalArgumentException(code+" requires at least "+min+" items");
                 if (max>0 && rows.size()>max) throw new IllegalArgumentException(code+" allows at most "+max+" items");
-                List<String> childCodes=new ArrayList<>();
+                Set<String> childCodes=new HashSet<>();
                 Object rawChildren=field.get("itemFields");
                 if(rawChildren instanceof List<?> children) for(Object child:children) childCodes.add(String.valueOf(child));
+                Set<String> requiredChildren=new HashSet<>();
+                Object rawSchemaFields=schema.get("fields");
+                if(rawSchemaFields instanceof List<?> schemaFields) {
+                    for(Object rawChild:schemaFields) if(rawChild instanceof Map<?,?> child
+                            && childCodes.contains(Objects.toString(child.get("code"),""))
+                            && Boolean.TRUE.equals(child.get("required"))) {
+                        requiredChildren.add(Objects.toString(child.get("code"),""));
+                    }
+                }
                 for(int index=0;index<rows.size();index++) {
                     Map<String,Object> row=objectMap(rows.get(index));
-                    for(String childCode:childCodes) {
+                    for(String childCode:requiredChildren) {
                         Object childValue=row.get(childCode);
                         if(blank(childValue)) throw new IllegalArgumentException(code+" item "+(index+1)+": "+childCode+" is required");
                     }
