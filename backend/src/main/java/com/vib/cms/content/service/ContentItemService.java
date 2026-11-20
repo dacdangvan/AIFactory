@@ -300,6 +300,16 @@ public class ContentItemService {
             delete.put("code","DELETE");delete.put("name","Delete");delete.put("allowed",true);
             delete.put("changesState",false);delete.put("toStateCode",stateCode);available.add(delete);
         }
+        // Publisher-only fallback action: return PUBLISHED content to APPROVED for republishing.
+        boolean publisher=userRoles.contains("SYSTEM_ADMIN") || userRoles.contains("DEV_ADMIN") || userRoles.contains("PO_ADMIN");
+        if("PUBLISHED".equalsIgnoreCase(stateCode) && publisher
+            && available.stream().noneMatch(a->"UNPUBLISH".equals(a.get("code")))
+            && !jdbc.query("SELECT id FROM cms_workflow_states WHERE workflow_version_id=? AND state_code='APPROVED'",(rs,n)->rs.getObject(1,UUID.class),workflowVersionId).isEmpty()) {
+            Map<String,Object> unpublish=new LinkedHashMap<>();
+            unpublish.put("code","UNPUBLISH");unpublish.put("name","Unpublish");unpublish.put("allowed",true);
+            unpublish.put("changesState",true);unpublish.put("toStateCode","APPROVED");
+            available.add(unpublish);
+        }
         Map<String,Object> result=new LinkedHashMap<>();
         result.put("stateCode",stateCode);result.put("stateName",context.get("stateName"));
         result.put("lockVersion",context.get("lockVersion"));result.put("availableActions",available);
@@ -332,6 +342,12 @@ public class ContentItemService {
             WHERE t.workflow_version_id=? AND t.from_state_id=? AND a.action_code=?
             """,(rs,n)->rs.getObject(1,UUID.class),workflowVersionId,stateId,action);
         UUID targetStateId=targets.isEmpty()||targets.getFirst()==null?stateId:targets.getFirst();
+        if("UNPUBLISH".equals(action)) {
+            if(!"PUBLISHED".equalsIgnoreCase(from))throw new IllegalStateException("Only published content can be unpublished");
+            List<UUID> approved=jdbc.query("SELECT id FROM cms_workflow_states WHERE workflow_version_id=? AND state_code='APPROVED'",(rs,n)->rs.getObject(1,UUID.class),workflowVersionId);
+            if(approved.isEmpty())throw new IllegalStateException("Workflow must define an APPROVED state before content can be unpublished");
+            targetStateId=approved.getFirst();
+        }
         String to=jdbc.queryForObject("SELECT state_code FROM cms_workflow_states WHERE id=?",String.class,targetStateId);
         int changed=jdbc.update("""
             UPDATE cms_workflow_instances SET current_state_id=?,lock_version=lock_version+1,updated_at=now()
