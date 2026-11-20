@@ -96,7 +96,7 @@ export default function ContentItemManagement({products,username,password}:Props
   if(!typeId)throw new Error("Vui lòng chọn Content Type");
   if(!code.trim())throw new Error("Content Code là bắt buộc");
   const payload={code:code.trim(),fields,expectedVersion};
-  if(editingId){await api("/api/v1/content-items/"+editingId,username,password,{method:"PUT",body:JSON.stringify(payload)});return editingId;}
+  if(editingId){await api("/api/v1/content-items/"+editingId,username,password,{method:"PUT",body:JSON.stringify(payload)});setExpectedVersion(expectedVersion+1);return editingId;}
   const created=await api("/api/v1/content-items?productId="+productId+"&contentTypeId="+typeId,username,password,{method:"POST",body:JSON.stringify(payload)});
   return String(created.id);
  };
@@ -123,8 +123,8 @@ export default function ContentItemManagement({products,username,password}:Props
   if(!editingId)throw new Error("Content Item chưa được lưu");
   let comment:string|undefined;
   if(action.code==="REJECT"){comment=window.prompt("Nhập lý do từ chối (bắt buộc)")||"";if(!comment.trim())throw new Error("Vui lòng nhập lý do từ chối");}
-  if(action.code==="DELETE"&&!window.confirm("Xóa Content Item "+code+"?"))return;
-  if(action.code==="APPROVE"&&!window.confirm("Xác nhận phê duyệt Content Item "+code+"?"))return;
+  if(action.code==="DELETE"&&!window.confirm("Xóa Content Item "+code+"?"))throw new Error("Đã hủy thao tác xóa");
+  if(action.code==="APPROVE"&&!window.confirm("Xác nhận phê duyệt Content Item "+code+"?"))throw new Error("Đã hủy thao tác phê duyệt");
   await api("/api/v1/content-items/"+editingId+"/workflow-actions",username,password,{method:"POST",body:JSON.stringify({action:action.code,comment,expectedLockVersion:workflowState?.lockVersion})});
   finishWorkflow();
  },action.code==="DELETE"?"Đã xóa Content Item":action.code==="REJECT"?"Đã từ chối nội dung":action.code==="APPROVE"?"Đã phê duyệt nội dung":"Đã thực hiện "+action.name);
