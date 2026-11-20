@@ -25,6 +25,33 @@ public class ContentConfigurationService {
     }
 
     @Transactional
+    public Map<String,Object> updateContentType(UUID id, Map<String,Object> body, String actor) {
+        Object parent=body.get("parentId");
+        jdbc.update("""
+            UPDATE cms_content_types SET code=?,name=?,description=?,parent_id=?::uuid,updated_at=now(),updated_by=?
+            WHERE id=?
+            """, required(body,"code"),required(body,"name"),body.get("description"),
+            parent==null||String.valueOf(parent).isBlank()?null:String.valueOf(parent),actor,id);
+        return jdbc.queryForMap("SELECT id,product_id AS \"productId\",parent_id AS \"parentId\",code,name,description,sort_order AS \"sortOrder\",status FROM cms_content_types WHERE id=?",id);
+    }
+    public Map<String,Object> setContentTypeStatus(UUID id,String status) {
+        if(!List.of("ACTIVE","INACTIVE","ARCHIVED").contains(status)) throw new IllegalArgumentException("Invalid status");
+        jdbc.update("UPDATE cms_content_types SET status=?,updated_at=now() WHERE id=?",status,id);
+        return Map.of("id",id,"status",status);
+    }
+    @Transactional
+    public Map<String,Object> updateTemplate(UUID id,Map<String,Object> body,String actor) {
+        jdbc.update("UPDATE cms_authoring_templates SET code=?,name=?,description=?,updated_at=now(),updated_by=? WHERE id=?",
+            required(body,"code"),required(body,"name"),body.get("description"),actor,id);
+        return jdbc.queryForMap("SELECT id,product_id AS \"productId\",code,name,description,status FROM cms_authoring_templates WHERE id=?",id);
+    }
+    public Map<String,Object> setTemplateStatus(UUID id,String status) {
+        if(!List.of("ACTIVE","INACTIVE","ARCHIVED").contains(status)) throw new IllegalArgumentException("Invalid status");
+        jdbc.update("UPDATE cms_authoring_templates SET status=?,updated_at=now() WHERE id=?",status,id);
+        return Map.of("id",id,"status",status);
+    }
+
+    @Transactional
     public Map<String,Object> createContentType(UUID productId, Map<String,Object> body, String actor) {
         String code = required(body, "code"), name = required(body, "name");
         UUID id = UUID.randomUUID();
