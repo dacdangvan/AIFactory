@@ -232,9 +232,11 @@ public class ContentItemService {
             boolean hasTransition=Boolean.TRUE.equals(decision.get("changesState"));
             if(allowed && (hasTransition || "SAVE".equals(code))) available.add(decision);
         }
+        Map<String,Object> deleteDecision=decisions.get("DELETE");
+        boolean deleteExplicitlyDenied=deleteDecision!=null && Boolean.TRUE.equals(deleteDecision.get("denied"));
         boolean ownerCanDelete=actor!=null && actor.equals(owner)
             && (Boolean.TRUE.equals(context.get("isInitial")) || "REJECTED".equals(stateCode));
-        if(ownerCanDelete && available.stream().noneMatch(a->"DELETE".equals(a.get("code")))) {
+        if(ownerCanDelete && !deleteExplicitlyDenied && available.stream().noneMatch(a->"DELETE".equals(a.get("code")))) {
             Map<String,Object> delete=new LinkedHashMap<>();
             delete.put("code","DELETE");delete.put("name","Delete");delete.put("allowed",true);
             delete.put("changesState",false);delete.put("toStateCode",stateCode);available.add(delete);
