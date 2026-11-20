@@ -1,5 +1,7 @@
 import {useEffect,useMemo,useState} from "react";
 import {Plus,RefreshCw,FilePlus2,Edit3,Trash2,Save,ArrowLeft,Search,Languages,Layers} from "lucide-react";
+import RichTextEditor from "./RichTextEditor";
+import AssetField from "./AssetField";
 
 type Row=Record<string,any>;
 type Props={products:{id:string;code:string;name:string}[];username:string;password:string};
@@ -99,7 +101,9 @@ export default function ContentItemManagement({products,username,password}:Props
  const renderControl=(field:FieldDef,value:any,onChange:(v:any)=>void)=>{
   const common={required:!!field.required,placeholder:field.options?.placeholder||""};
   const type=field.type||"text";
-  if(["textarea","richtext","markdown","html","code"].includes(type))return <textarea rows={type==="textarea"?4:8} {...common} value={inputValue(value)} onChange={e=>onChange(e.target.value)}/>;
+  if(type==="richtext")return <RichTextEditor value={inputValue(value)} onChange={onChange} placeholder={field.options?.placeholder||"Nhập nội dung..."}/>;
+  if(["image","image_gallery","file","file_gallery","video","audio"].includes(type))return <AssetField value={value} onChange={onChange} productId={productId} username={username} password={password} multiple={["image_gallery","file_gallery"].includes(type)||!!field.multiple} accept={type.startsWith("image")?"image/*":type==="video"?"video/*":type==="audio"?"audio/*":undefined}/>;
+  if(["textarea","markdown","html","code"].includes(type))return <textarea rows={type==="textarea"?4:8} {...common} value={inputValue(value)} onChange={e=>onChange(e.target.value)}/>;
   if(["select","radio"].includes(type))return <select {...common} value={inputValue(value)} onChange={e=>onChange(e.target.value)}><option value="">-- Chọn --</option>{(field.options?.values||[]).map((x:string)=><option key={x} value={x}>{x}</option>)}</select>;
   if(type==="checkbox"&&(field.options?.values||[]).length)return <div className="option-list">{(field.options?.values||[]).map((x:string)=><label key={x}><input type="checkbox" checked={Array.isArray(value)&&value.includes(x)} onChange={e=>onChange(e.target.checked?[...(Array.isArray(value)?value:[]),x]:(value||[]).filter((v:string)=>v!==x))}/>{x}</label>)}</div>;
   if(type==="checkbox"||type==="toggle")return <label className="field-inline"><input type="checkbox" checked={!!value} onChange={e=>onChange(e.target.checked)}/> {type==="toggle"?"Bật":"Có"}</label>;
@@ -107,7 +111,7 @@ export default function ContentItemManagement({products,username,password}:Props
   if(type==="number"||type==="currency"||type==="percentage"||type==="slider")return <input type="number" {...common} min={field.validation?.min} max={field.validation?.max} value={inputValue(value)} onChange={e=>onChange(e.target.value===""?"":Number(e.target.value))}/>;
   if(type==="date"||type==="time"||type==="datetime")return <input type={type==="datetime"?"datetime-local":type} {...common} value={inputValue(value)} onChange={e=>onChange(e.target.value)}/>;
   if(type==="email"||type==="url"||type==="phone")return <input type={type==="phone"?"tel":type} {...common} value={inputValue(value)} onChange={e=>onChange(e.target.value)}/>;
-  if(["image","image_gallery","file","file_gallery","video","audio"].includes(type))return <input type="url" {...common} value={inputValue(value)} placeholder="Asset URL / Asset ID" onChange={e=>onChange(e.target.value)}/>;
+
   return <input type="text" {...common} minLength={field.validation?.minLength} maxLength={field.validation?.maxLength} pattern={field.validation?.pattern||undefined} value={inputValue(value)} onChange={e=>onChange(type==="slug"?slug(e.target.value):e.target.value)}/>;
  };
  const renderField=(field:FieldDef, value:any, onChange:(v:any)=>void, keyPrefix="")=>{
