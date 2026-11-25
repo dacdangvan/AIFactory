@@ -47,6 +47,7 @@ public class PageManagementService {
             """,id,productId,parent,theme,Objects.toString(body.get("pageType"),"NORMAL"),code,title,
                 Objects.toString(body.get("locale"),"vi-VN"),slug,Objects.toString(body.get("status"),"DRAFT"),
                 num(body.get("sortOrder"),0),json(body.get("seo")),json(body.get("settings")),actor,actor);
+        snapshot(id,actor);
         return get(id);
     }
 
