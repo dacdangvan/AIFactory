@@ -4,7 +4,7 @@ import {Check,ChevronDown,Search,X} from "lucide-react";
 
 type Option={value:string;label:string;disabled?:boolean;group?:string};
 type Props={
- value?:string;defaultValue?:string;onChange?:(event:{target:{value:string}})=>void;
+ value?:string;defaultValue?:string;onChange?:(value:string)=>void;
  children?:ReactNode;disabled?:boolean;className?:string;placeholder?:string;
  name?:string;id?:string;required?:boolean;title?:string; "aria-label"?:string;
 };
@@ -35,7 +35,7 @@ export default function CustomSelect({value,defaultValue,onChange,children,disab
  const options=useMemo(()=>collect(children),[children]);
  const selected=options.find(o=>o.value===selectedValue);
  const filtered=useMemo(()=>options.filter(o=>!query||o.label.toLocaleLowerCase().includes(query.toLocaleLowerCase())||o.group?.toLocaleLowerCase().includes(query.toLocaleLowerCase())),[options,query]);
- const choose=(next:string)=>{if(value===undefined)setInternal(next);onChange?.({target:{value:next}});setOpen(false);setQuery("");};
+ const choose=(next:string)=>{if(value===undefined)setInternal(next);onChange?.(next);setOpen(false);setQuery("");};
  useEffect(()=>{if(!open)return;
   const updatePosition=()=>{
    const rect=root.current?.getBoundingClientRect();if(!rect)return;
