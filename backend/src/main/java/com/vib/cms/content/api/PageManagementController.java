@@ -48,10 +48,10 @@ public class PageManagementController {
         return ApiResponse.ok(service.saveSections(id,sections,actor(auth)));
     }
 
-    @GetMapping("/themes")
+    @GetMapping("/pages/themes")
     public ApiResponse<List<Map<String,Object>>> themes(@RequestParam UUID productId) { return ApiResponse.ok(service.themes(productId)); }
 
-    @RequestMapping(path="/themes",method={RequestMethod.POST,RequestMethod.PUT})
+    @RequestMapping(path="/pages/themes",method={RequestMethod.POST,RequestMethod.PUT})
     public ApiResponse<Map<String,Object>> saveTheme(@RequestParam UUID productId,@RequestBody Map<String,Object> body,Authentication auth) {
         return ApiResponse.ok(service.saveTheme(productId,body,actor(auth)));
     }
