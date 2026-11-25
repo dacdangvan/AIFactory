@@ -20,7 +20,7 @@ export default function PageManagement({products,username,password}:Props){
  const [editing,setEditing]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  useEffect(()=>{if(!productId&&products[0])setProductId(products[0].id)},[products]);
  const run=async(fn:()=>Promise<void>)=>{setBusy(true);setError("");setNotice("");try{await fn()}catch(e:any){setError(e.message||"Có lỗi xảy ra")}finally{setBusy(false)}};
- const load=async()=>{if(!productId)return;await run(async()=>{const [p,t]=await Promise.all([api("/api/v1/pages?productId="+productId,username,password),api("/api/v1/themes?productId="+productId,username,password)]);setPages(p||[]);setThemes(t||[]);if(selected&&!(p||[]).some((x:Row)=>x.id===selected)){setSelected("");setPage(emptyPage());setSections([])}})};
+ const load=async()=>{if(!productId)return;await run(async()=>{const [p,t]=await Promise.all([api("/api/v1/pages?productId="+productId,username,password),api("/api/v1/pages/themes?productId="+productId,username,password)]);setPages(p||[]);setThemes(t||[]);if(selected&&!(p||[]).some((x:Row)=>x.id===selected)){setSelected("");setPage(emptyPage());setSections([])}})};
  useEffect(()=>{load()},[productId]);
  const pageMap=useMemo(()=>new Map(pages.map(p=>[p.id,p])),[pages]);
  const roots=useMemo(()=>pages.filter(p=>!p.parentId),[pages]);
@@ -32,7 +32,7 @@ export default function PageManagement({products,username,password}:Props){
  const saveSections=async()=>run(async()=>{const saved=await api("/api/v1/pages/"+selected+"/sections",username,password,{method:"PUT",body:JSON.stringify({sections})});setSections(saved||[]);setNotice("Đã lưu thứ tự và cấu hình Section")});
  const addSection=()=>setSections(old=>[...old,{sectionKey:"section_"+(old.length+1),sectionName:"Section "+(old.length+1),componentKey:"",contentItemId:"",sortOrder:old.length+1,config:{}}]);
  const moveSection=(i:number,d:number)=>setSections(old=>{const a=[...old],j=i+d;if(j<0||j>=a.length)return a;[a[i],a[j]]=[a[j],a[i]];return a.map((x,k)=>({...x,sortOrder:k+1}))});
- const saveTheme=async()=>run(async()=>{const saved=await api("/api/v1/themes?productId="+productId,username,password,{method:theme.id?"PUT":"POST",body:JSON.stringify(theme)});setTheme(saved);await load();setNotice("Đã lưu Theme")});
+ const saveTheme=async()=>run(async()=>{const saved=await api("/api/v1/pages/themes?productId="+productId,username,password,{method:theme.id?"PUT":"POST",body:JSON.stringify(theme)});setTheme(saved);await load();setNotice("Đã lưu Theme")});
  const copyLocale=()=>{const from=page.locale==="vi-VN"?"en-US":"vi-VN";const to=page.locale==="vi-VN"?"en-US":"vi-VN";setPage(p=>({...p,settings:{...(p.settings||{}),copiedFrom:from,copyTarget:to}}));setNotice("Đã tạo ghi chú sao chép ngôn ngữ; nhập nội dung bản dịch và lưu Page.")};
  return <div className="page-management">
   <div className="items-toolbar"><div><h2>Page Composer</h2><p>Quản lý cây trang, thuộc tính, section và theme theo Product.</p></div><div className="toolbar-actions"><CustomSelect value={productId} onChange={setProductId}>{products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</CustomSelect><button className="secondary" onClick={load} disabled={busy}><RefreshCw size={14}/> Refresh</button></div></div>
