@@ -51,8 +51,7 @@ public class PageManagementController {
     @GetMapping("/themes")
     public ApiResponse<List<Map<String,Object>>> themes(@RequestParam UUID productId) { return ApiResponse.ok(service.themes(productId)); }
 
-    @PostMapping("/themes")
-    @PutMapping("/themes")
+    @RequestMapping(path="/themes",method={RequestMethod.POST,RequestMethod.PUT})
     public ApiResponse<Map<String,Object>> saveTheme(@RequestParam UUID productId,@RequestBody Map<String,Object> body,Authentication auth) {
         return ApiResponse.ok(service.saveTheme(productId,body,actor(auth)));
     }
