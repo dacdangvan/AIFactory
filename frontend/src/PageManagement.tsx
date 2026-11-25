@@ -52,7 +52,7 @@ export default function PageManagement({products,username,password}:Props){
       <label className="field"><span>Page Type</span><CustomSelect disabled={!editing} value={page.pageType||"NORMAL"} onChange={v=>setPage({...page,pageType:v})}><option value="NORMAL">Normal Page</option><option value="TAG">Tag Page</option></CustomSelect></label>
       <label className="field"><span>Locale</span><CustomSelect disabled={!editing} value={page.locale||"vi-VN"} onChange={v=>setPage({...page,locale:v})}><option value="vi-VN">Vietnamese (vi-VN)</option><option value="en-US">English (en-US)</option></CustomSelect></label>
       <label className="field"><span>Slug</span><input disabled={!editing} value={page.slug||""} onChange={e=>setPage({...page,slug:e.target.value})}/></label>
-      <label className="field"><span>Status</span><CustomSelect disabled={!editing} value={page.status||"DRAFT"} onChange={v=>setPage({...page,status:v})}>{["DRAFT","IN_REVIEW","APPROVED","PUBLISHED","UNPUBLISHED"].map(s=><option key={s}>{s}</option>)}</CustomSelect></label>
+      <label className="field"><span>Status</span><input readOnly value={page.status||"DRAFT"} title="Status được điều khiển bởi Workflow; không sửa trực tiếp tại Page properties."/></label>
       <label className="field"><span>Theme</span><CustomSelect disabled={!editing} value={page.themeId||""} onChange={v=>setPage({...page,themeId:v})}><option value="">Product default</option>{themes.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</CustomSelect></label>
       <label className="field"><span>Sort Order</span><input type="number" disabled={!editing} value={page.sortOrder||0} onChange={e=>setPage({...page,sortOrder:Number(e.target.value)})}/></label>
      </div>
