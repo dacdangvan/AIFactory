@@ -95,7 +95,7 @@ public class PageManagementService {
     }
 
     @Transactional
-    public List<Map<String,Object>> saveSections(UUID pageId,List<Map<String,Object>> sections) {
+    public List<Map<String,Object>> saveSections(UUID pageId,List<Map<String,Object>> sections,String actor) {
         jdbc.queryForObject("SELECT id FROM cms_pages WHERE id=?",UUID.class,pageId);
         jdbc.update("DELETE FROM cms_page_sections WHERE page_id=?",pageId);
         int order=0;
@@ -107,7 +107,7 @@ public class PageManagementService {
                 """,UUID.randomUUID(),pageId,req(s,"sectionKey"),req(s,"sectionName"),req(s,"componentKey"),
                     nullable(s.get("contentItemId")),num(s.get("sortOrder"),order),json(s.get("config")));
         }
-        snapshot(pageId,"local-dev");
+        snapshot(pageId,actor);
         return sections(pageId);
     }
 
@@ -141,15 +141,23 @@ public class PageManagementService {
         jdbc.update("INSERT INTO cms_page_versions(page_id,version_no,snapshot,created_by) VALUES (?,?,?::jsonb,?)",pageId,version,json(page),actor);
     }
     private String routePath(Map<String,Object> page) {
+        List<String> slugs=new ArrayList<>();
+        Map<String,Object> current=page;
+        Set<UUID> seen=new HashSet<>();
+        while(current!=null) {
+            UUID id=UUID.fromString(String.valueOf(current.get("id")));
+            if(!seen.add(id)) throw new IllegalArgumentException("Page tree contains a parent cycle");
+            String slug=Objects.toString(current.get("slug"),"").trim();
+            if(!slug.isBlank()) slugs.add(slug);
+            Object parent=current.get("parentId");
+            current=parent==null?null:get(UUID.fromString(String.valueOf(parent)));
+        }
+        Collections.reverse(slugs);
+        String locale=Objects.toString(page.get("locale"),"vi-VN");
         List<String> parts=new ArrayList<>();
-        Object parent=page.get("parentId");
-        if(parent!=null) {
-            Map<String,Object> p=get(UUID.fromString(String.valueOf(parent)));
-            parts.add(routePath(p));
-        } else parts.add("");
-        parts.add(Objects.toString(page.get("locale"),"vi-VN"));
-        parts.add(Objects.toString(page.get("slug"),""));
-        return String.join("/",parts).replaceAll("/{2,}","/");
+        parts.add(locale);
+        parts.addAll(slugs);
+        return "/"+String.join("/",parts);
     }
     private Map<String,Object> decode(Map<String,Object> row) {
         for(String key:List.of("seo","settings","config")) if(row.containsKey(key)&&row.get(key) instanceof String s) {
