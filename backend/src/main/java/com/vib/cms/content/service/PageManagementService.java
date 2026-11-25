@@ -45,7 +45,7 @@ public class PageManagementService {
             INSERT INTO cms_pages(id,product_id,parent_id,theme_id,page_type,code,title,locale,slug,status,sort_order,seo,settings,created_by,updated_by)
             VALUES (?,?,?::uuid,?::uuid,?,?,?,?,?,?,?::jsonb,?::jsonb,?,?)
             """,id,productId,parent,theme,Objects.toString(body.get("pageType"),"NORMAL"),code,title,
-                Objects.toString(body.get("locale"),"vi-VN"),slug,Objects.toString(body.get("status"),"DRAFT"),
+                Objects.toString(body.get("locale"),"vi-VN"),slug,"DRAFT",
                 num(body.get("sortOrder"),0),json(body.get("seo")),json(body.get("settings")),actor,actor);
         snapshot(id,actor);
         return get(id);
@@ -65,7 +65,7 @@ public class PageManagementService {
               seo=?::jsonb,settings=?::jsonb,updated_by=?,updated_at=now() WHERE id=?
             """,parent,body.containsKey("themeId")?nullable(body.get("themeId")):nullable(before.get("themeId")),
                 Objects.toString(body.getOrDefault("pageType",before.get("pageType")),"NORMAL"),title,locale,slug,
-                Objects.toString(body.getOrDefault("status",before.get("status")),"DRAFT"),
+                Objects.toString(before.get("status"),"DRAFT"),
                 num(body.get("sortOrder"),num(before.get("sortOrder"),0)),
                 json(body.getOrDefault("seo",before.get("seo"))),json(body.getOrDefault("settings",before.get("settings"))),actor,id);
         Map<String,Object> after=get(id);
