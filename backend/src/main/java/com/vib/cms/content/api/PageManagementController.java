@@ -38,14 +38,14 @@ public class PageManagementController {
     public ApiResponse<List<Map<String,Object>>> sections(@PathVariable UUID id) { return ApiResponse.ok(service.sections(id)); }
 
     @PutMapping("/pages/{id}/sections")
-    public ApiResponse<List<Map<String,Object>>> saveSections(@PathVariable UUID id,@RequestBody Map<String,Object> body) {
+    public ApiResponse<List<Map<String,Object>>> saveSections(@PathVariable UUID id,@RequestBody Map<String,Object> body,Authentication auth) {
         Object raw=body.get("sections");
         if(!(raw instanceof List<?> list)) throw new IllegalArgumentException("sections must be an array");
         List<Map<String,Object>> sections=new ArrayList<>();
         for(Object item:list) if(item instanceof Map<?,?> map) {
             Map<String,Object> value=new LinkedHashMap<>(); map.forEach((k,v)->value.put(String.valueOf(k),v)); sections.add(value);
         }
-        return ApiResponse.ok(service.saveSections(id,sections));
+        return ApiResponse.ok(service.saveSections(id,sections,actor(auth)));
     }
 
     @GetMapping("/themes")
